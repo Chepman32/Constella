@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from './src/contexts/ThemeContext';
@@ -10,8 +11,12 @@ import SplashScreen from './src/screens/SplashScreen';
 import NotesListScreen from './src/screens/NotesListScreen';
 import NoteEditorScreen from './src/screens/NoteEditorScreen';
 import SpatialCanvasScreen from './src/screens/SpatialCanvasScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
+import FavoritesScreen from './src/screens/FavoritesScreen';
+import CustomDrawerContent from './src/components/CustomDrawerContent';
 
 const Stack = createStackNavigator();
+const Drawer = createDrawerNavigator();
 
 const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -41,22 +46,37 @@ const App: React.FC = () => {
 
   const containerStyle = { flex: 1 };
 
+  const MainStackNavigator = () => (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        gestureEnabled: true,
+      }}
+    >
+      <Stack.Screen name="Notes" component={NotesListScreen} />
+      <Stack.Screen name="Editor" component={NoteEditorScreen} />
+    </Stack.Navigator>
+  );
+
   return (
     <GestureHandlerRootView style={containerStyle}>
       <SafeAreaProvider>
         <ThemeProvider>
           <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
           <NavigationContainer>
-            <Stack.Navigator
+            <Drawer.Navigator
+              drawerContent={(props) => <CustomDrawerContent {...props} />}
               screenOptions={{
                 headerShown: false,
-                gestureEnabled: true,
+                drawerType: 'slide',
+                overlayColor: 'rgba(0, 0, 0, 0.5)',
               }}
             >
-              <Stack.Screen name="Notes" component={NotesListScreen} />
-              <Stack.Screen name="Editor" component={NoteEditorScreen} />
-              <Stack.Screen name="Canvas" component={SpatialCanvasScreen} />
-            </Stack.Navigator>
+              <Drawer.Screen name="MainStack" component={MainStackNavigator} />
+              <Drawer.Screen name="Favorites" component={FavoritesScreen} />
+              <Drawer.Screen name="Canvas" component={SpatialCanvasScreen} />
+              <Drawer.Screen name="Settings" component={SettingsScreen} />
+            </Drawer.Navigator>
           </NavigationContainer>
         </ThemeProvider>
       </SafeAreaProvider>

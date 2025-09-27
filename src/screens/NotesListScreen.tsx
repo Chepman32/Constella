@@ -337,6 +337,12 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.openDrawer()}
+          style={styles.actionButton}
+        >
+          <Text style={[styles.actionIcon, { color: theme.primary }]}>☰</Text>
+        </TouchableOpacity>
         <Text style={[styles.title, { color: theme.text }]}>Notes</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity

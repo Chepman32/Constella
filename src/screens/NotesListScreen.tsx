@@ -92,8 +92,9 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
   }, [searchQuery, loadNotes]);
 
   const toggleSearch = () => {
-    setIsSearchActive(!isSearchActive);
-    searchOpacity.value = withTiming(isSearchActive ? 0 : 1, { duration: 300 });
+    const newSearchActive = !isSearchActive;
+    setIsSearchActive(newSearchActive);
+    searchOpacity.value = withTiming(newSearchActive ? 1 : 0, { duration: 300 });
     if (isSearchActive) {
       setSearchQuery('');
     }

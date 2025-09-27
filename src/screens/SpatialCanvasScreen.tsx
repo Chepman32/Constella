@@ -6,21 +6,14 @@ import {
   Dimensions,
   TouchableOpacity,
 } from 'react-native';
-import {
-  PanGestureHandler,
-  PinchGestureHandler,
-  State,
-} from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  useAnimatedGestureHandler,
   withSpring,
   withTiming,
-  runOnJS,
 } from 'react-native-reanimated';
-import { Canvas, Group, Rect } from '@shopify/react-native-skia';
 import { useTheme } from '../contexts/ThemeContext';
 import { databaseService } from '../services/DatabaseService';
 import { Note } from '../types';
@@ -31,6 +24,9 @@ interface SpatialCanvasScreenProps {
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const GRID_LINE_COUNT = 80;
+const GRID_SPACING = 120;
+const GRID_EXTENT = (GRID_LINE_COUNT / 2) * GRID_SPACING;
 
 interface NoteNode {
   id: string;
@@ -83,36 +79,36 @@ const SpatialCanvasScreen: React.FC<SpatialCanvasScreenProps> = ({ navigation })
     }
   };
 
-  const panGestureHandler = useAnimatedGestureHandler({
-    onStart: () => {
+  const panGesture = Gesture.Pan()
+    .onStart(() => {
       lastTranslateX.value = translateX.value;
       lastTranslateY.value = translateY.value;
-    },
-    onActive: (event) => {
+    })
+    .onUpdate((event) => {
       translateX.value = lastTranslateX.value + event.translationX;
       translateY.value = lastTranslateY.value + event.translationY;
-    },
-    onEnd: () => {
+    })
+    .onEnd(() => {
       // Optional: add momentum or snap to bounds
-    },
-  });
+    });
 
-  const pinchGestureHandler = useAnimatedGestureHandler({
-    onStart: () => {
+  const pinchGesture = Gesture.Pinch()
+    .onStart(() => {
       lastScale.value = scale.value;
-    },
-    onActive: (event) => {
+    })
+    .onUpdate((event) => {
       scale.value = Math.max(0.1, Math.min(5, lastScale.value * event.scale));
-    },
-    onEnd: () => {
+    })
+    .onEnd(() => {
       // Optionally snap to certain zoom levels
       if (scale.value < 0.5) {
         scale.value = withSpring(0.5);
       } else if (scale.value > 3) {
         scale.value = withSpring(3);
       }
-    },
-  });
+    });
+
+  const composedGesture = Gesture.Simultaneous(panGesture, pinchGesture);
 
   const canvasAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -227,81 +223,70 @@ const SpatialCanvasScreen: React.FC<SpatialCanvasScreenProps> = ({ navigation })
       </View>
 
       {/* Canvas */}
-      <PinchGestureHandler onGestureEvent={pinchGestureHandler}>
+      <GestureDetector gesture={composedGesture}>
         <Animated.View style={styles.canvasContainer}>
-          <PanGestureHandler onGestureEvent={panGestureHandler}>
-            <Animated.View style={[styles.canvas, canvasAnimatedStyle]}>
-              {/* Background Grid */}
-              <Canvas style={styles.backgroundCanvas}>
-                <Group>
-                  {/* Draw grid lines */}
-                  {Array.from({ length: 100 }, (_, i) => (
-                    <React.Fragment key={`grid-${i}`}>
-                      <Rect
-                        x={(i - 50) * 100}
-                        y={-5000}
-                        width={1}
-                        height={10000}
-                        color={theme.border + '20'}
-                      />
-                      <Rect
-                        x={-5000}
-                        y={(i - 50) * 100}
-                        width={10000}
-                        height={1}
-                        color={theme.border + '20'}
-                      />
-                    </React.Fragment>
-                  ))}
-                </Group>
-              </Canvas>
+          <Animated.View style={[styles.canvas, canvasAnimatedStyle]}>
+            <View style={styles.backgroundGrid} pointerEvents="none">
+              {Array.from({ length: GRID_LINE_COUNT }, (_, i) => {
+                const offset = (i - GRID_LINE_COUNT / 2) * GRID_SPACING;
+                const color = theme.border + '20';
 
-              {/* Note Nodes */}
-              {noteNodes.map((node) => (
-                <TouchableOpacity
-                  key={node.id}
-                  style={[
-                    styles.noteNode,
-                    {
-                      left: node.x,
-                      top: node.y,
-                      width: node.width,
-                      height: node.height,
-                      backgroundColor: theme.surface,
-                      borderColor: selectedNode === node.id ? theme.primary : theme.border,
-                      transform: [{ scale: node.scale }],
-                    },
-                  ]}
-                  onPress={() => handleNodePress(node.id)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.noteTitle, { color: theme.text }]}>
-                    {node.note.title || 'Untitled'}
-                  </Text>
+                return (
+                  <React.Fragment key={`grid-${i}`}>
+                    <View
+                      style={[
+                        styles.gridLineVertical,
+                        { left: offset, backgroundColor: color },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.gridLineHorizontal,
+                        { top: offset, backgroundColor: color },
+                      ]}
+                    />
+                  </React.Fragment>
+                );
+              })}
+            </View>
 
-                  <Text style={[styles.notePreview, { color: theme.textSecondary }]}>
-                    {truncateText(node.note.content || '', 100)}
-                  </Text>
+            {noteNodes.map((node) => (
+              <TouchableOpacity
+                key={node.id}
+                style={[
+                  styles.noteNode,
+                  {
+                    left: node.x,
+                    top: node.y,
+                    width: node.width,
+                    height: node.height,
+                    backgroundColor: theme.surface,
+                    borderColor: selectedNode === node.id ? theme.primary : theme.border,
+                    transform: [{ scale: node.scale }],
+                  },
+                ]}
+                onPress={() => handleNodePress(node.id)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.noteTitle, { color: theme.text }]}>
+                  {node.note.title || 'Untitled'}
+                </Text>
 
-                  <Text style={[styles.noteDate, { color: theme.textSecondary }]}>
-                    {formatDate(node.note.lastModified)}
-                  </Text>
+                <Text style={[styles.notePreview, { color: theme.textSecondary }]}>
+                  {truncateText(node.note.content || '', 100)}
+                </Text>
 
-                  {/* Connection Lines (if any) */}
-                  {/* TODO: Implement based on note links */}
-                </TouchableOpacity>
-              ))}
+                <Text style={[styles.noteDate, { color: theme.textSecondary }]}>
+                  {formatDate(node.note.lastModified)}
+                </Text>
 
-              {/* Constellation Effects */}
-              <Canvas style={styles.effectsCanvas}>
-                <Group>
-                  {/* TODO: Add particle effects, connections between notes */}
-                </Group>
-              </Canvas>
-            </Animated.View>
-          </PanGestureHandler>
+                {/* Connection Lines (if any) */}
+                {/* TODO: Implement based on note links */}
+              </TouchableOpacity>
+            ))}
+          </Animated.View>
         </Animated.View>
-      </PinchGestureHandler>
+      </GestureDetector>
 
       {/* FAB */}
       <TouchableOpacity
@@ -360,20 +345,24 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
   },
-  backgroundCanvas: {
+  backgroundGrid: {
     position: 'absolute',
-    top: -5000,
-    left: -5000,
-    width: 10000,
-    height: 10000,
+    top: -GRID_EXTENT,
+    left: -GRID_EXTENT,
+    width: GRID_EXTENT * 2,
+    height: GRID_EXTENT * 2,
   },
-  effectsCanvas: {
+  gridLineVertical: {
     position: 'absolute',
-    top: -5000,
-    left: -5000,
-    width: 10000,
-    height: 10000,
-    pointerEvents: 'none',
+    top: 0,
+    bottom: 0,
+    width: StyleSheet.hairlineWidth,
+  },
+  gridLineHorizontal: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: StyleSheet.hairlineWidth,
   },
   noteNode: {
     position: 'absolute',

@@ -6,9 +6,12 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
-  Dimensions,
   Alert,
+  Share,
 } from 'react-native';
+import { MenuView } from '@react-native-menu/menu';
+import Clipboard from '@react-native-clipboard/clipboard';
+import HapticFeedback from 'react-native-haptic-feedback';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Animated, {
@@ -29,10 +32,9 @@ interface NotesListScreenProps {
   navigation: any;
 }
 
-const { width } = Dimensions.get('window');
 
 const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
-  const { theme } = useTheme();
+  const { theme, themeName } = useTheme();
   const [notes, setNotes] = useState<Note[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
@@ -121,6 +123,49 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
     );
   };
 
+  const handleMenuAction = async (noteId: string, action: string) => {
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+
+    switch (action) {
+      case 'copy':
+        try {
+          const textContent = note.title + '\n\n' + note.content;
+          Clipboard.setString(textContent);
+          HapticFeedback.trigger('impactLight');
+        } catch (error) {
+          console.error('Failed to copy note:', error);
+        }
+        break;
+
+      case 'share':
+        try {
+          const textContent = note.title + '\n\n' + note.content;
+          await Share.share({
+            message: textContent,
+            title: note.title,
+          });
+        } catch (error) {
+          console.error('Failed to share note:', error);
+        }
+        break;
+
+      case 'favorite':
+        // TODO: Implement favorite functionality
+        HapticFeedback.trigger('impactLight');
+        Alert.alert('Coming Soon', 'Favorite functionality will be added soon!');
+        break;
+
+      case 'delete':
+        deleteNote(noteId);
+        break;
+    }
+  };
+
+  const showContextMenu = () => {
+    HapticFeedback.trigger('impactMedium');
+  };
+
   const searchAnimatedStyle = useAnimatedStyle(() => ({
     opacity: searchOpacity.value,
     transform: [
@@ -142,12 +187,41 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
         entering={FadeInDown.delay(index * 100)}
         layout={Layout.springify()}
       >
-        <TouchableOpacity
-          style={[styles.noteCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
-          onPress={() => navigation.navigate('Editor', { noteId: item.id })}
-          onLongPress={() => deleteNote(item.id)}
-          activeOpacity={0.7}
+        <MenuView
+          onPressAction={({ nativeEvent }) => handleMenuAction(item.id, nativeEvent.event)}
+          actions={[
+            {
+              id: 'copy',
+              title: 'Copy',
+              image: 'doc.on.doc',
+            },
+            {
+              id: 'share',
+              title: 'Share',
+              image: 'square.and.arrow.up',
+            },
+            {
+              id: 'favorite',
+              title: 'Favorite',
+              image: 'heart',
+            },
+            {
+              id: 'delete',
+              title: 'Delete',
+              image: 'trash',
+              attributes: {
+                destructive: true,
+              },
+            },
+          ]}
+          shouldOpenOnLongPress={true}
         >
+          <TouchableOpacity
+            style={[styles.noteCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
+            onPress={() => navigation.navigate('Editor', { noteId: item.id })}
+            onLongPress={showContextMenu}
+            activeOpacity={0.7}
+          >
           <View style={styles.noteHeader}>
             <Text style={[styles.noteTitle, { color: theme.text }]}>
               {item.title || 'Untitled'}
@@ -182,7 +256,8 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
               )}
             </View>
           )}
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </MenuView>
       </Animated.View>
     );
   };

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-native-clipboard/clipboard": "^1.16.3",
     "@react-native-menu/menu": "^2.0.0",
     "@react-native/new-app-screen": "0.81.4",
     "@react-navigation/bottom-tabs": "^7.4.7",
@@ -53,5 +54,6 @@
   },
   "engines": {
     "node": ">=20"
-  }
+  },
+  "packageManager": "yarn@4.1.1+sha512.ec40d0639bb307441b945d9467139cbb88d14394baac760b52eca038b330d16542d66fef61574271534ace5a200518dabf3b53a85f1f9e4bfa37141b538a9590"
 }

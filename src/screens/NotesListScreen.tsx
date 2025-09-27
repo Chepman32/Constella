@@ -10,11 +10,13 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   withTiming,
+  withSequence,
   Layout,
   FadeInDown,
 } from 'react-native-reanimated';
@@ -39,11 +41,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
   const searchOpacity = useSharedValue(0);
   const fabScale = useSharedValue(1);
 
-  useEffect(() => {
-    loadNotes();
-  }, []);
-
-  const loadNotes = async () => {
+  const loadNotes = useCallback(async () => {
     try {
       setIsLoading(true);
       const allNotes = await databaseService.getAllNotes(searchQuery || undefined);
@@ -54,18 +52,21 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [searchQuery]);
 
-  const handleSearch = useCallback(
-    debounce((query: string) => {
+  useFocusEffect(
+    useCallback(() => {
       loadNotes();
-    }, 300),
-    []
+    }, [loadNotes])
   );
 
   useEffect(() => {
-    handleSearch(searchQuery);
-  }, [searchQuery, handleSearch]);
+    const timeout = setTimeout(() => {
+      loadNotes();
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [searchQuery, loadNotes]);
 
   const toggleSearch = () => {
     setIsSearchActive(!isSearchActive);
@@ -261,26 +262,6 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
     </SafeAreaView>
   );
 };
-
-// Utility function for debouncing search
-function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}
-
-// Animation sequence helper
-function withSequence(...animations: any[]) {
-  return animations.reduce((acc, animation, index) => {
-    if (index === 0) return animation;
-    return acc;
-  });
-}
 
 const styles = StyleSheet.create({
   container: {

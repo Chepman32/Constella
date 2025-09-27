@@ -1,97 +1,142 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Constella - Mobile Note-Taking Application
 
-# Getting Started
+## Project Description
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+Constella is an innovative offline-first note-taking mobile application built with React Native. The app's core purpose is to let users create, organize, and visualize notes entirely offline, while delivering a delightful user experience filled with rich animations and unique features.
 
-## Step 1: Start Metro
+### Key Features
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+- **Offline-First Architecture**: All data is stored locally with no internet requirement, ensuring quick access and user privacy
+- **Rich Animations**: Powered by React Native Reanimated and React Native Skia for smooth 60-120fps animations
+- **Spatial Canvas**: Infinite 2D workspace for organizing notes visually with simulated 3D effects
+- **Knowledge Graph**: Interactive visualization of note relationships and connections
+- **Time Travel**: Version history with cinematic timeline scrubbing
+- **Intelligent Auto-formatting**: Smart templates and formatting based on content patterns
+- **Focus Mode**: Distraction-free writing with ambient effects
+- **Multiple Themes**: Light, Dark, Solar, and Mono themes with adaptive switching
+- **Localization**: Support for 10+ languages (en, ru, es, de, fr, pt, ja, zh, ko, uk)
+- **Gesture-Based Interactions**: Draw shapes to trigger actions and commands
+- **Premium Features**: In-app purchases for advanced functionality
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+### Tech Stack
 
-```sh
-# Using npm
-npm start
+- **Framework**: React Native (iOS focus, cross-platform compatible)
+- **Animation**: React Native Reanimated v3+ for high-performance animations
+- **Graphics**: React Native Skia for custom 2D graphics and drawing
+- **Database**: SQLite with encryption for offline storage
+- **Navigation**: React Navigation for screen management
+- **State Management**: React Context + hooks
+- **Language**: TypeScript for type safety and maintainability
 
-# OR using Yarn
-yarn start
-```
+## Development Progress
 
-## Step 2: Build and run your app
+### ✅ Completed Tasks
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+- [x] Set up React Native project structure and core dependencies
+- [x] Implement database schema and offline storage with SQLite
+- [x] Create theme system with Light, Dark, Solar, and Mono themes
+- [x] Build animated splash screen with physics-based logo animation
+- [x] Implement main notes list screen with search functionality
+- [x] Create rich text note editor with formatting toolbar
 
-### Android
+### 🚧 In Progress
 
-```sh
-# Using npm
-npm run android
+Currently working on: Drawing and handwriting support using React Native Skia
 
-# OR using Yarn
-yarn android
-```
+### 📋 Upcoming Tasks
 
-### iOS
+- [ ] Add drawing and handwriting support using React Native Skia
+- [ ] Implement spatial canvas mode with infinite 2D space
+- [ ] Build knowledge graph visualization with auto-layout
+- [ ] Create time travel mode with version history timeline
+- [ ] Add focus mode with ambient sounds and distraction-free UI
+- [ ] Implement intelligent auto-formatting and templates
+- [ ] Add gesture-based interactions and micro-animations
+- [ ] Implement settings screen with theme, sound, and haptics controls
+- [ ] Add localization support for 10+ languages
+- [ ] Implement in-app purchases and premium features
+- [ ] Add delightful details, easter eggs, and achievements
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+## Installation & Setup
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+```bash
+# Install dependencies
+npm install
 
-```sh
-bundle install
-```
+# Install iOS dependencies (macOS only)
+cd ios && pod install && cd ..
 
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+# Run on iOS
 npm run ios
 
-# OR using Yarn
-yarn ios
+# Run on Android
+npm run android
+
+# Start Metro bundler
+npm start
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## Project Structure
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+```
+src/
+├── components/          # Reusable UI components
+├── screens/            # Screen components
+├── services/           # Business logic and database
+├── contexts/           # React contexts for state management
+├── types/              # TypeScript type definitions
+├── utils/              # Utility functions and helpers
+├── assets/             # Images, fonts, sounds
+└── locales/            # Internationalization files
+```
 
-## Step 3: Modify your app
+## Core Architecture
 
-Now that you have successfully run the app, let's make changes!
+- **Offline Database**: SQLite with encrypted storage for privacy
+- **Theme System**: Dynamic theming with automatic day/night switching
+- **Animation Engine**: Reanimated + Skia for complex visual effects
+- **Navigation**: Stack-based navigation with gesture support
+- **State Management**: Context-based global state with local component state
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## Features in Detail
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+### Notes Management
+- Create, edit, and delete notes with rich text formatting
+- Auto-save functionality with version history
+- Full-text search across all notes
+- Tag-based organization and filtering
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+### Visual Organization
+- **Spatial Canvas**: Arrange notes in infinite 2D space
+- **Knowledge Graph**: Automatic relationship visualization
+- **Smart Linking**: Proximity-based note connections
 
-## Congratulations! :tada:
+### Advanced Editing
+- Markdown support with live preview
+- Drawing and handwriting integration
+- Voice memos and file attachments
+- Gesture-based shortcuts
 
-You've successfully run and modified your React Native App. :partying_face:
+### User Experience
+- **Focus Mode**: Distraction-free writing environment
+- **Adaptive Themes**: Content-aware visual effects
+- **Micro-interactions**: Delightful animations throughout
+- **Haptic Feedback**: Tactile responses for actions
 
-### Now what?
+## Privacy & Security
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+- All data stored locally on device
+- Optional database encryption
+- No cloud sync or data collection
+- Export/import for manual backup
 
-# Troubleshooting
+## Monetization
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+- Free tier with core functionality
+- Premium unlock via in-app purchase
+- No ads, subscription-based revenue model
+- Advanced features gated behind premium
 
-# Learn More
+---
 
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+*This README is maintained as a living document and updated with each development milestone.*

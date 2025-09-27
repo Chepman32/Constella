@@ -1,0 +1,372 @@
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, StyleSheet, Dimensions, TouchableOpacity, Text } from 'react-native';
+import { Canvas, Path, Skia, useTouchHandler, useCanvasRef } from '@shopify/react-native-skia';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { useTheme } from '../contexts/ThemeContext';
+import { Stroke, Point, Drawing } from '../types';
+import { generateId } from '../utils';
+
+interface DrawingCanvasProps {
+  onDrawingComplete: (drawing: Drawing) => void;
+  onClose: () => void;
+  existingDrawing?: Drawing;
+}
+
+const { width, height } = Dimensions.get('window');
+
+type DrawingTool = 'pen' | 'highlighter' | 'eraser';
+
+const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
+  onDrawingComplete,
+  onClose,
+  existingDrawing,
+}) => {
+  const { theme } = useTheme();
+  const canvasRef = useCanvasRef();
+
+  const [strokes, setStrokes] = useState<Stroke[]>(existingDrawing?.strokes || []);
+  const [currentStroke, setCurrentStroke] = useState<Point[]>([]);
+  const [currentTool, setCurrentTool] = useState<DrawingTool>('pen');
+  const [currentColor, setCurrentColor] = useState(theme.text);
+  const [currentWidth, setCurrentWidth] = useState(3);
+
+  const toolbarOpacity = useSharedValue(1);
+
+  const touchHandler = useTouchHandler({
+    onStart: (touchInfo) => {
+      const newPoint: Point = {
+        x: touchInfo.x,
+        y: touchInfo.y,
+        pressure: touchInfo.force || 1,
+        timestamp: Date.now(),
+      };
+      setCurrentStroke([newPoint]);
+    },
+    onActive: (touchInfo) => {
+      const newPoint: Point = {
+        x: touchInfo.x,
+        y: touchInfo.y,
+        pressure: touchInfo.force || 1,
+        timestamp: Date.now(),
+      };
+      setCurrentStroke((prev) => [...prev, newPoint]);
+    },
+    onEnd: () => {
+      if (currentStroke.length > 1) {
+        const newStroke: Stroke = {
+          points: currentStroke,
+          color: currentColor,
+          width: currentWidth,
+          tool: currentTool,
+        };
+        setStrokes((prev) => [...prev, newStroke]);
+      }
+      setCurrentStroke([]);
+    },
+  });
+
+  const paths = useMemo(() => {
+    const allStrokes = [...strokes];
+
+    // Add current stroke if it exists
+    if (currentStroke.length > 1) {
+      allStrokes.push({
+        points: currentStroke,
+        color: currentColor,
+        width: currentWidth,
+        tool: currentTool,
+      });
+    }
+
+    return allStrokes.map((stroke, index) => {
+      const path = Skia.Path.Make();
+
+      if (stroke.points.length < 2) return null;
+
+      const firstPoint = stroke.points[0];
+      path.moveTo(firstPoint.x, firstPoint.y);
+
+      // Create smooth curves using quadratic bezier curves
+      for (let i = 1; i < stroke.points.length - 1; i++) {
+        const currentPoint = stroke.points[i];
+        const nextPoint = stroke.points[i + 1];
+
+        const cpx = (currentPoint.x + nextPoint.x) / 2;
+        const cpy = (currentPoint.y + nextPoint.y) / 2;
+
+        path.quadTo(currentPoint.x, currentPoint.y, cpx, cpy);
+      }
+
+      // Add the last point
+      const lastPoint = stroke.points[stroke.points.length - 1];
+      path.lineTo(lastPoint.x, lastPoint.y);
+
+      return {
+        path,
+        color: stroke.color,
+        width: stroke.width,
+        tool: stroke.tool,
+        key: `stroke-${index}`,
+      };
+    }).filter(Boolean);
+  }, [strokes, currentStroke, currentColor, currentWidth, currentTool]);
+
+  const handleToolChange = (tool: DrawingTool) => {
+    setCurrentTool(tool);
+
+    // Adjust color and width based on tool
+    switch (tool) {
+      case 'pen':
+        setCurrentColor(theme.text);
+        setCurrentWidth(3);
+        break;
+      case 'highlighter':
+        setCurrentColor(theme.accent + '40'); // Semi-transparent
+        setCurrentWidth(8);
+        break;
+      case 'eraser':
+        setCurrentColor(theme.background);
+        setCurrentWidth(10);
+        break;
+    }
+  };
+
+  const handleUndo = () => {
+    if (strokes.length > 0) {
+      setStrokes((prev) => prev.slice(0, -1));
+    }
+  };
+
+  const handleClear = () => {
+    setStrokes([]);
+    setCurrentStroke([]);
+  };
+
+  const handleSave = async () => {
+    if (strokes.length === 0) {
+      onClose();
+      return;
+    }
+
+    // Create a thumbnail by capturing the canvas
+    const snapshot = canvasRef.current?.makeImageSnapshot();
+    let thumbnail: string | undefined;
+
+    if (snapshot) {
+      const image = snapshot.encodeToBase64();
+      thumbnail = `data:image/png;base64,${image}`;
+    }
+
+    const drawing: Drawing = {
+      id: existingDrawing?.id || generateId(),
+      strokes,
+      thumbnail,
+    };
+
+    onDrawingComplete(drawing);
+  };
+
+  const handleColorChange = (color: string) => {
+    setCurrentColor(color);
+  };
+
+  const toggleToolbar = () => {
+    toolbarOpacity.value = withSpring(toolbarOpacity.value === 1 ? 0 : 1);
+  };
+
+  const toolbarAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: toolbarOpacity.value,
+    transform: [
+      {
+        translateY: toolbarOpacity.value === 1 ? 0 : 100,
+      },
+    ],
+  }));
+
+  const colors = [theme.text, theme.primary, theme.accent, '#FF3B30', '#34C759', '#007AFF', '#FF9500'];
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onClose} style={styles.headerButton}>
+          <Text style={[styles.headerButtonText, { color: theme.textSecondary }]}>Cancel</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={toggleToolbar} style={styles.headerButton}>
+          <Text style={[styles.headerButtonText, { color: theme.primary }]}>🎨</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={handleSave} style={styles.headerButton}>
+          <Text style={[styles.headerButtonText, { color: theme.primary }]}>Done</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Canvas
+        ref={canvasRef}
+        style={styles.canvas}
+        onTouch={touchHandler}
+      >
+        {paths.map((pathData) => {
+          if (!pathData) return null;
+
+          return (
+            <Path
+              key={pathData.key}
+              path={pathData.path}
+              style="stroke"
+              strokeWidth={pathData.width}
+              strokeCap="round"
+              strokeJoin="round"
+              color={pathData.color}
+              opacity={pathData.tool === 'highlighter' ? 0.5 : 1}
+            />
+          );
+        })}
+      </Canvas>
+
+      <Animated.View style={[styles.toolbar, toolbarAnimatedStyle, { backgroundColor: theme.surface }]}>
+        <View style={styles.toolSection}>
+          <Text style={[styles.toolLabel, { color: theme.textSecondary }]}>Tools</Text>
+          <View style={styles.toolButtons}>
+            {(['pen', 'highlighter', 'eraser'] as DrawingTool[]).map((tool) => (
+              <TouchableOpacity
+                key={tool}
+                style={[
+                  styles.toolButton,
+                  {
+                    backgroundColor: currentTool === tool ? theme.primary : theme.background,
+                    borderColor: theme.border,
+                  },
+                ]}
+                onPress={() => handleToolChange(tool)}
+              >
+                <Text style={[
+                  styles.toolButtonText,
+                  { color: currentTool === tool ? '#fff' : theme.text }
+                ]}>
+                  {tool === 'pen' ? '✏️' : tool === 'highlighter' ? '🖍️' : '🧹'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.toolSection}>
+          <Text style={[styles.toolLabel, { color: theme.textSecondary }]}>Colors</Text>
+          <View style={styles.colorPalette}>
+            {colors.map((color) => (
+              <TouchableOpacity
+                key={color}
+                style={[
+                  styles.colorButton,
+                  {
+                    backgroundColor: color,
+                    borderColor: currentColor === color ? theme.primary : theme.border,
+                    borderWidth: currentColor === color ? 3 : 1,
+                  },
+                ]}
+                onPress={() => handleColorChange(color)}
+              />
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: theme.background, borderColor: theme.border }]}
+            onPress={handleUndo}
+          >
+            <Text style={[styles.actionButtonText, { color: theme.text }]}>Undo</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: theme.background, borderColor: theme.border }]}
+            onPress={handleClear}
+          >
+            <Text style={[styles.actionButtonText, { color: theme.error }]}>Clear</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingTop: 50, // Account for status bar
+  },
+  headerButton: {
+    padding: 8,
+  },
+  headerButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  canvas: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  toolbar: {
+    padding: 20,
+    borderTopWidth: 1,
+  },
+  toolSection: {
+    marginBottom: 20,
+  },
+  toolLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  toolButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  toolButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+  },
+  toolButtonText: {
+    fontSize: 20,
+  },
+  colorPalette: {
+    flexDirection: 'row',
+    gap: 12,
+    flexWrap: 'wrap',
+  },
+  colorButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  actionButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});
+
+export default DrawingCanvas;

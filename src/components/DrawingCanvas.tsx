@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, StyleSheet, Dimensions, TouchableOpacity, Text } from 'react-native';
 import { Canvas, Path, Skia, useTouchHandler, useCanvasRef } from '@shopify/react-native-skia';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
 import { useTheme } from '../contexts/ThemeContext';
 import { Stroke, Point, Drawing } from '../types';
 import { generateId } from '../utils';
@@ -32,38 +32,55 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
   const toolbarOpacity = useSharedValue(1);
 
-  const touchHandler = useTouchHandler({
-    onStart: (touchInfo) => {
-      const newPoint: Point = {
-        x: touchInfo.x,
-        y: touchInfo.y,
-        pressure: touchInfo.force || 1,
-        timestamp: Date.now(),
-      };
-      setCurrentStroke([newPoint]);
-    },
-    onActive: (touchInfo) => {
-      const newPoint: Point = {
-        x: touchInfo.x,
-        y: touchInfo.y,
-        pressure: touchInfo.force || 1,
-        timestamp: Date.now(),
-      };
-      setCurrentStroke((prev) => [...prev, newPoint]);
-    },
-    onEnd: () => {
-      if (currentStroke.length > 1) {
+  const handleTouchStart = useCallback((x: number, y: number, force?: number) => {
+    const newPoint: Point = {
+      x,
+      y,
+      pressure: force ?? 1,
+      timestamp: Date.now(),
+    };
+    setCurrentStroke([newPoint]);
+  }, []);
+
+  const handleTouchActive = useCallback((x: number, y: number, force?: number) => {
+    const newPoint: Point = {
+      x,
+      y,
+      pressure: force ?? 1,
+      timestamp: Date.now(),
+    };
+    setCurrentStroke((prev) => [...prev, newPoint]);
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    setCurrentStroke((prevStroke) => {
+      if (prevStroke.length > 1) {
         const newStroke: Stroke = {
-          points: currentStroke,
+          points: prevStroke,
           color: currentColor,
           width: currentWidth,
           tool: currentTool,
         };
         setStrokes((prev) => [...prev, newStroke]);
       }
-      setCurrentStroke([]);
+      return [];
+    });
+  }, [currentColor, currentTool, currentWidth]);
+
+  const touchHandler = useTouchHandler(
+    {
+      onStart: (touchInfo) => {
+        runOnJS(handleTouchStart)(touchInfo.x, touchInfo.y, touchInfo.force);
+      },
+      onActive: (touchInfo) => {
+        runOnJS(handleTouchActive)(touchInfo.x, touchInfo.y, touchInfo.force);
+      },
+      onEnd: () => {
+        runOnJS(handleTouchEnd)();
+      },
     },
-  });
+    [handleTouchStart, handleTouchActive, handleTouchEnd]
+  );
 
   const paths = useMemo(() => {
     const allStrokes = [...strokes];

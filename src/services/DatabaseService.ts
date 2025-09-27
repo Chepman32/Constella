@@ -159,6 +159,24 @@ export class DatabaseService {
     );
   }
 
+  async updateNotePosition(id: string, position: { x: number; y: number } | null): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const timestamp = Date.now();
+
+    if (position) {
+      await this.db.executeSql(
+        'UPDATE notes SET positionX = ?, positionY = ?, lastModified = ? WHERE id = ?',
+        [position.x, position.y, timestamp, id]
+      );
+    } else {
+      await this.db.executeSql(
+        'UPDATE notes SET positionX = NULL, positionY = NULL, lastModified = ? WHERE id = ?',
+        [timestamp, id]
+      );
+    }
+  }
+
   async deleteNote(id: string): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
 

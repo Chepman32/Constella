@@ -1,15 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Pressable,
   TextInput,
   Alert,
   Share,
+  Modal,
+  TouchableWithoutFeedback,
+  useWindowDimensions,
 } from 'react-native';
-import { MenuView } from '@react-native-menu/menu';
 import Clipboard from '@react-native-clipboard/clipboard';
 import HapticFeedback from 'react-native-haptic-feedback';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,6 +35,21 @@ interface NotesListScreenProps {
   navigation: any;
 }
 
+type ContextMenuState = {
+  note: Note;
+  position: {
+    pageX: number;
+    pageY: number;
+  };
+};
+
+const CONTEXT_MENU_ACTIONS = [
+  { id: 'copy', label: 'Copy', icon: '📋' },
+  { id: 'share', label: 'Share', icon: '📤' },
+  { id: 'favorite', label: 'Favorite', icon: '⭐️' },
+  { id: 'delete', label: 'Delete', icon: '🗑️', destructive: true },
+] as const;
+
 
 const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
   const { theme, themeName } = useTheme();
@@ -39,6 +57,9 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [contextMenuState, setContextMenuState] = useState<ContextMenuState | null>(null);
+  const [menuLayout, setMenuLayout] = useState({ width: 0, height: 0 });
+  const windowDimensions = useWindowDimensions();
 
   const searchOpacity = useSharedValue(0);
   const fabScale = useSharedValue(1);
@@ -162,9 +183,58 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
     }
   };
 
-  const showContextMenu = () => {
-    HapticFeedback.trigger('impactMedium');
+  const closeContextMenu = () => {
+    setContextMenuState(null);
   };
+
+  const openContextMenu = (note: Note, position: { pageX: number; pageY: number }) => {
+    HapticFeedback.trigger('impactMedium');
+    setContextMenuState({ note, position });
+  };
+
+  const handleContextMenuSelection = async (action: string) => {
+    if (!contextMenuState) {
+      return;
+    }
+
+    const { note } = contextMenuState;
+    closeContextMenu();
+    await handleMenuAction(note.id, action);
+  };
+
+  const menuPosition = useMemo(() => {
+    if (!contextMenuState) {
+      return { top: 0, left: 0 };
+    }
+
+    const { width: screenWidth, height: screenHeight } = windowDimensions;
+    const estimatedWidth = menuLayout.width || 260;
+    const estimatedHeight = menuLayout.height || 220;
+    const margin = 16;
+    const { pageX, pageY } = contextMenuState.position;
+
+    const preferredTop = pageY + 12;
+    const maximumTop = screenHeight - margin - estimatedHeight;
+    let top = preferredTop;
+
+    if (preferredTop > maximumTop) {
+      top = pageY - estimatedHeight - 12;
+      if (top < margin) {
+        top = Math.max(margin, maximumTop);
+      }
+    } else if (top < margin) {
+      top = margin;
+    }
+
+    let left = pageX - estimatedWidth / 2;
+    if (left < margin) {
+      left = margin;
+    } else if (left > screenWidth - estimatedWidth - margin) {
+      left = screenWidth - estimatedWidth - margin;
+    }
+
+    return { top, left };
+  }, [contextMenuState, menuLayout, windowDimensions]);
 
   const searchAnimatedStyle = useAnimatedStyle(() => ({
     opacity: searchOpacity.value,
@@ -187,41 +257,24 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
         entering={FadeInDown.delay(index * 100)}
         layout={Layout.springify()}
       >
-        <MenuView
-          onPressAction={({ nativeEvent }) => handleMenuAction(item.id, nativeEvent.event)}
-          actions={[
+        <Pressable
+          onPress={() => navigation.navigate('Editor', { noteId: item.id })}
+          onLongPress={(event) =>
+            openContextMenu(item, {
+              pageX: event.nativeEvent.pageX,
+              pageY: event.nativeEvent.pageY,
+            })
+          }
+          delayLongPress={250}
+          style={({ pressed }) => [
+            styles.noteCard,
             {
-              id: 'copy',
-              title: 'Copy',
-              image: 'doc.on.doc',
-            },
-            {
-              id: 'share',
-              title: 'Share',
-              image: 'square.and.arrow.up',
-            },
-            {
-              id: 'favorite',
-              title: 'Favorite',
-              image: 'heart',
-            },
-            {
-              id: 'delete',
-              title: 'Delete',
-              image: 'trash',
-              attributes: {
-                destructive: true,
-              },
+              backgroundColor: theme.surface,
+              borderColor: theme.border,
+              opacity: pressed ? 0.95 : 1,
             },
           ]}
-          shouldOpenOnLongPress={true}
         >
-          <TouchableOpacity
-            style={[styles.noteCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
-            onPress={() => navigation.navigate('Editor', { noteId: item.id })}
-            onLongPress={showContextMenu}
-            activeOpacity={0.7}
-          >
           <View style={styles.noteHeader}>
             <Text style={[styles.noteTitle, { color: theme.text }]}>
               {item.title || 'Untitled'}
@@ -256,11 +309,18 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
               )}
             </View>
           )}
-          </TouchableOpacity>
-        </MenuView>
+        </Pressable>
       </Animated.View>
     );
   };
+
+  const selectedNotePreview = useMemo(() => {
+    if (!contextMenuState) {
+      return '';
+    }
+
+    return extractTextFromMarkdown(contextMenuState.note.content);
+  }, [contextMenuState]);
 
   const EmptyState = () => (
     <View style={styles.emptyState}>
@@ -324,6 +384,121 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
           }
         }}
       />
+
+      <Modal
+        visible={!!contextMenuState}
+        transparent
+        animationType="fade"
+        onRequestClose={closeContextMenu}
+      >
+        <View style={styles.contextMenuWrapper}>
+          <TouchableWithoutFeedback onPress={closeContextMenu}>
+            <View style={[StyleSheet.absoluteFillObject, styles.contextMenuBackdrop]} />
+          </TouchableWithoutFeedback>
+
+          {contextMenuState && (
+            <View pointerEvents="box-none" style={StyleSheet.absoluteFillObject}>
+              <Animated.View
+                entering={FadeInDown.duration(150)}
+                style={[
+                  styles.contextMenuContainer,
+                  {
+                    top: menuPosition.top,
+                    left: menuPosition.left,
+                    backgroundColor: theme.surface,
+                    borderColor: theme.border,
+                  },
+                ]}
+                onLayout={(event) => {
+                  const { width, height } = event.nativeEvent.layout;
+                  if (
+                    menuLayout.width !== width ||
+                    menuLayout.height !== height
+                  ) {
+                    setMenuLayout({ width, height });
+                  }
+                }}
+              >
+                <View style={styles.contextMenuPreview}>
+                  <Text
+                    style={[styles.contextMenuTitle, { color: theme.text }]}
+                    numberOfLines={1}
+                  >
+                    {contextMenuState.note.title || 'Untitled'}
+                  </Text>
+                  <Text
+                    style={[styles.contextMenuDate, { color: theme.textSecondary }]}
+                  >
+                    {formatDate(contextMenuState.note.lastModified)}
+                  </Text>
+                  {selectedNotePreview ? (
+                    <Text
+                      style={[styles.contextMenuContent, { color: theme.textSecondary }]}
+                      numberOfLines={4}
+                    >
+                      {truncateText(selectedNotePreview, 200)}
+                    </Text>
+                  ) : (
+                    <Text
+                      style={[styles.contextMenuContent, { color: theme.textSecondary }]}
+                      numberOfLines={2}
+                    >
+                      No details to show yet
+                    </Text>
+                  )}
+                  {contextMenuState.note.tags.length > 0 && (
+                    <View style={styles.contextMenuTags}>
+                      {contextMenuState.note.tags.slice(0, 3).map((tag, tagIndex) => (
+                        <View
+                          key={tagIndex}
+                          style={[styles.contextMenuTag, { backgroundColor: theme.accent + '20' }]}
+                        >
+                          <Text style={[styles.contextMenuTagText, { color: theme.accent }]}>
+                            {tag}
+                          </Text>
+                        </View>
+                      ))}
+                      {contextMenuState.note.tags.length > 3 && (
+                        <Text style={[styles.contextMenuMoreTags, { color: theme.textSecondary }]}>
+                          +{contextMenuState.note.tags.length - 3}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                </View>
+                <View style={[styles.contextMenuActions, { borderColor: theme.border }]}
+                >
+                  {CONTEXT_MENU_ACTIONS.map((action) => (
+                    <Pressable
+                      key={action.id}
+                      onPress={() => handleContextMenuSelection(action.id)}
+                      style={({ pressed }) => [
+                        styles.contextMenuAction,
+                        pressed && {
+                          backgroundColor:
+                            themeName === 'dark'
+                              ? 'rgba(255, 255, 255, 0.08)'
+                              : 'rgba(0, 0, 0, 0.06)',
+                        },
+                      ]}
+                    >
+                      <Text style={styles.contextMenuIcon}>{action.icon}</Text>
+                      <Text
+                        style={[
+                          styles.contextMenuActionLabel,
+                          { color: action.id === 'delete' ? '#d62d20' : theme.text },
+                        ]}
+                      >
+                        {action.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </Animated.View>
+            </View>
+          )}
+        </View>
+      </Modal>
 
       <Animated.View style={[styles.fab, fabAnimatedStyle]}>
         <TouchableOpacity
@@ -447,6 +622,80 @@ const styles = StyleSheet.create({
   emptyStateSubtitle: {
     fontSize: 16,
     textAlign: 'center',
+  },
+  contextMenuWrapper: {
+    flex: 1,
+  },
+  contextMenuBackdrop: {
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  },
+  contextMenuContainer: {
+    position: 'absolute',
+    width: 280,
+    borderRadius: 18,
+    borderWidth: 1,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+  contextMenuPreview: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+  },
+  contextMenuTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  contextMenuDate: {
+    fontSize: 12,
+    marginBottom: 8,
+  },
+  contextMenuContent: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  contextMenuTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+  },
+  contextMenuTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginRight: 6,
+    marginBottom: 4,
+  },
+  contextMenuTagText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  contextMenuMoreTags: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    alignSelf: 'center',
+    marginBottom: 4,
+  },
+  contextMenuActions: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  contextMenuAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  contextMenuIcon: {
+    fontSize: 18,
+  },
+  contextMenuActionLabel: {
+    fontSize: 16,
+    marginLeft: 12,
   },
   fab: {
     position: 'absolute',

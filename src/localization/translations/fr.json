@@ -1,0 +1,97 @@
+{
+  "app": {
+    "name": "Constella",
+    "subtitle": "Votre carnet numérique"
+  },
+  "navigation": {
+    "notes": "Notes",
+    "favorites": "Favoris",
+    "canvas": "Toile Spatiale",
+    "settings": "Paramètres"
+  },
+  "notes": {
+    "title": "Notes",
+    "newNote": "Nouvelle Note",
+    "untitled": "Sans titre",
+    "search": "Rechercher des notes...",
+    "empty": {
+      "title": "Aucune note pour le moment",
+      "subtitle": "Appuyez sur + pour créer votre première note"
+    },
+    "actions": {
+      "copy": "Copier",
+      "share": "Partager",
+      "favorite": "Favori",
+      "delete": "Supprimer"
+    },
+    "delete": {
+      "title": "Supprimer la note",
+      "message": "Êtes-vous sûr de vouloir supprimer cette note?"
+    }
+  },
+  "favorites": {
+    "title": "Favoris",
+    "empty": {
+      "title": "Aucun favori pour le moment",
+      "subtitle": "Marquez vos notes préférées pour les voir ici"
+    },
+    "remove": {
+      "title": "Retirer des favoris",
+      "message": "Retirer cette note des favoris?"
+    }
+  },
+  "settings": {
+    "title": "Paramètres",
+    "theme": "Thème",
+    "language": "Langue",
+    "darkMode": "Mode Sombre",
+    "autoTheme": "Thème Automatique",
+    "notifications": "Notifications",
+    "backup": "Sauvegarde & Sync",
+    "export": "Exporter les Notes",
+    "about": "À propos",
+    "version": "Version",
+    "madeWith": "Fait avec ❤️ pour la prise de notes",
+    "themes": {
+      "light": "Clair",
+      "dark": "Sombre",
+      "solar": "Solaire",
+      "mono": "Monochrome"
+    },
+    "languages": {
+      "en": "Anglais",
+      "ru": "Russe",
+      "es": "Espagnol",
+      "de": "Allemand",
+      "fr": "Français",
+      "pt": "Portugais",
+      "ja": "Japonais",
+      "zh": "Chinois",
+      "ko": "Coréen",
+      "uk": "Ukrainien"
+    }
+  },
+  "common": {
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "remove": "Retirer",
+    "save": "Enregistrer",
+    "edit": "Modifier",
+    "done": "Terminé",
+    "back": "Retour",
+    "ok": "OK",
+    "error": "Erreur",
+    "comingSoon": "Bientôt disponible",
+    "comingSoonMessage": "Cette fonctionnalité sera ajoutée bientôt!",
+    "failed": "Échec",
+    "success": "Succès"
+  },
+  "errors": {
+    "loadNotes": "Échec du chargement des notes",
+    "createNote": "Échec de la création de la note",
+    "deleteNote": "Échec de la suppression de la note",
+    "copyNote": "Échec de la copie de la note",
+    "shareNote": "Échec du partage de la note",
+    "loadFavorites": "Échec du chargement des notes favorites"
+  }
+}

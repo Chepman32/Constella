@@ -27,6 +27,7 @@ import Animated, {
   FadeInDown,
 } from 'react-native-reanimated';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLocalization } from '../contexts/LocalizationContext';
 import { databaseService } from '../services/DatabaseService';
 import { Note } from '../types';
 import { formatDate, truncateText, extractTextFromMarkdown } from '../utils';
@@ -43,16 +44,12 @@ type ContextMenuState = {
   };
 };
 
-const CONTEXT_MENU_ACTIONS = [
-  { id: 'copy', label: 'Copy', icon: '📋' },
-  { id: 'share', label: 'Share', icon: '📤' },
-  { id: 'favorite', label: 'Favorite', icon: '⭐️' },
-  { id: 'delete', label: 'Delete', icon: '🗑️', destructive: true },
-] as const;
+// We'll define this inside the component to access translations
 
 
 const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
   const { theme, themeName } = useTheme();
+  const { t } = useLocalization();
   const [notes, setNotes] = useState<Note[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
@@ -64,6 +61,13 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
   const searchOpacity = useSharedValue(0);
   const fabScale = useSharedValue(1);
 
+  const CONTEXT_MENU_ACTIONS = [
+    { id: 'copy', label: t('notes.actions.copy'), icon: '📋' },
+    { id: 'share', label: t('notes.actions.share'), icon: '📤' },
+    { id: 'favorite', label: t('notes.actions.favorite'), icon: '⭐️' },
+    { id: 'delete', label: t('notes.actions.delete'), icon: '🗑️', destructive: true },
+  ] as const;
+
   const loadNotes = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -71,11 +75,11 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
       setNotes(allNotes);
     } catch (error) {
       console.error('Failed to load notes:', error);
-      Alert.alert('Error', 'Failed to load notes');
+      Alert.alert(t('common.error'), t('errors.loadNotes'));
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery]);
+  }, [searchQuery, t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -108,7 +112,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
       );
 
       const noteId = await databaseService.createNote({
-        title: 'New Note',
+        title: t('notes.newNote'),
         content: '',
         tags: [],
         lastModified: new Date(),
@@ -118,18 +122,18 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
       navigation.navigate('Editor', { noteId });
     } catch (error) {
       console.error('Failed to create note:', error);
-      Alert.alert('Error', 'Failed to create note');
+      Alert.alert(t('common.error'), t('errors.createNote'));
     }
   };
 
   const deleteNote = async (noteId: string) => {
     Alert.alert(
-      'Delete Note',
-      'Are you sure you want to delete this note?',
+      t('notes.delete.title'),
+      t('notes.delete.message'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -137,7 +141,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
               loadNotes();
             } catch (error) {
               console.error('Failed to delete note:', error);
-              Alert.alert('Error', 'Failed to delete note');
+              Alert.alert(t('common.error'), t('errors.deleteNote'));
             }
           },
         },
@@ -175,7 +179,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
       case 'favorite':
         // TODO: Implement favorite functionality
         HapticFeedback.trigger('impactLight');
-        Alert.alert('Coming Soon', 'Favorite functionality will be added soon!');
+        Alert.alert(t('common.comingSoon'), t('common.comingSoonMessage'));
         break;
 
       case 'delete':
@@ -278,7 +282,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
         >
           <View style={styles.noteHeader}>
             <Text style={[styles.noteTitle, { color: theme.text }]}>
-              {item.title || 'Untitled'}
+              {item.title || t('notes.untitled')}
             </Text>
             <Text style={[styles.noteDate, { color: theme.textSecondary }]}>
               {formatDate(item.lastModified)}
@@ -326,10 +330,10 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
   const EmptyState = () => (
     <View style={styles.emptyState}>
       <Text style={[styles.emptyStateTitle, { color: theme.text }]}>
-        No notes yet
+        {t('notes.empty.title')}
       </Text>
       <Text style={[styles.emptyStateSubtitle, { color: theme.textSecondary }]}>
-        Tap the + button to create your first note
+        {t('notes.empty.subtitle')}
       </Text>
     </View>
   );
@@ -343,7 +347,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
         >
           <Text style={[styles.actionIcon, { color: theme.primary }]}>☰</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, { color: theme.text }]}>Notes</Text>
+        <Text style={[styles.title, { color: theme.text }]}>{t('notes.title')}</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity
             onPress={() => navigation.navigate('Canvas')}
@@ -367,7 +371,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
               borderColor: theme.border,
             },
           ]}
-          placeholder="Search notes..."
+          placeholder={t('notes.search')}
           placeholderTextColor={theme.textSecondary}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -431,7 +435,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
                     style={[styles.contextMenuTitle, { color: theme.text }]}
                     numberOfLines={1}
                   >
-                    {contextMenuState.note.title || 'Untitled'}
+                    {contextMenuState.note.title || t('notes.untitled')}
                   </Text>
                   <Text
                     style={[styles.contextMenuDate, { color: theme.textSecondary }]}

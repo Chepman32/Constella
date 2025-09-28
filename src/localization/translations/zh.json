@@ -1,0 +1,97 @@
+{
+  "app": {
+    "name": "Constella",
+    "subtitle": "您的数字笔记本"
+  },
+  "navigation": {
+    "notes": "笔记",
+    "favorites": "收藏",
+    "canvas": "空间画布",
+    "settings": "设置"
+  },
+  "notes": {
+    "title": "笔记",
+    "newNote": "新笔记",
+    "untitled": "无标题",
+    "search": "搜索笔记...",
+    "empty": {
+      "title": "暂无笔记",
+      "subtitle": "点击+按钮创建您的第一个笔记"
+    },
+    "actions": {
+      "copy": "复制",
+      "share": "分享",
+      "favorite": "收藏",
+      "delete": "删除"
+    },
+    "delete": {
+      "title": "删除笔记",
+      "message": "您确定要删除这个笔记吗？"
+    }
+  },
+  "favorites": {
+    "title": "收藏",
+    "empty": {
+      "title": "暂无收藏",
+      "subtitle": "为您喜欢的笔记加星标，它们将出现在这里"
+    },
+    "remove": {
+      "title": "移除收藏",
+      "message": "从收藏中移除这个笔记？"
+    }
+  },
+  "settings": {
+    "title": "设置",
+    "theme": "主题",
+    "language": "语言",
+    "darkMode": "深色模式",
+    "autoTheme": "自动主题",
+    "notifications": "通知",
+    "backup": "备份与同步",
+    "export": "导出笔记",
+    "about": "关于",
+    "version": "版本",
+    "madeWith": "用❤️为笔记而制作",
+    "themes": {
+      "light": "浅色",
+      "dark": "深色",
+      "solar": "太阳能",
+      "mono": "单色"
+    },
+    "languages": {
+      "en": "英语",
+      "ru": "俄语",
+      "es": "西班牙语",
+      "de": "德语",
+      "fr": "法语",
+      "pt": "葡萄牙语",
+      "ja": "日语",
+      "zh": "中文",
+      "ko": "韩语",
+      "uk": "乌克兰语"
+    }
+  },
+  "common": {
+    "cancel": "取消",
+    "delete": "删除",
+    "remove": "移除",
+    "save": "保存",
+    "edit": "编辑",
+    "done": "完成",
+    "back": "返回",
+    "ok": "确定",
+    "error": "错误",
+    "comingSoon": "即将推出",
+    "comingSoonMessage": "此功能即将添加！",
+    "failed": "失败",
+    "success": "成功"
+  },
+  "errors": {
+    "loadNotes": "加载笔记失败",
+    "createNote": "创建笔记失败",
+    "deleteNote": "删除笔记失败",
+    "copyNote": "复制笔记失败",
+    "shareNote": "分享笔记失败",
+    "loadFavorites": "加载收藏笔记失败"
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "app": {
+    "name": "Constella",
+    "subtitle": "Ihr digitales Notizbuch"
+  },
+  "navigation": {
+    "notes": "Notizen",
+    "favorites": "Favoriten",
+    "canvas": "Räumliche Leinwand",
+    "settings": "Einstellungen"
+  },
+  "notes": {
+    "title": "Notizen",
+    "newNote": "Neue Notiz",
+    "untitled": "Ohne Titel",
+    "search": "Notizen suchen...",
+    "empty": {
+      "title": "Noch keine Notizen",
+      "subtitle": "Tippen Sie auf +, um Ihre erste Notiz zu erstellen"
+    },
+    "actions": {
+      "copy": "Kopieren",
+      "share": "Teilen",
+      "favorite": "Favorit",
+      "delete": "Löschen"
+    },
+    "delete": {
+      "title": "Notiz löschen",
+      "message": "Sind Sie sicher, dass Sie diese Notiz löschen möchten?"
+    }
+  },
+  "favorites": {
+    "title": "Favoriten",
+    "empty": {
+      "title": "Noch keine Favoriten",
+      "subtitle": "Markieren Sie Ihre Lieblings-Notizen, um sie hier zu sehen"
+    },
+    "remove": {
+      "title": "Favorit entfernen",
+      "message": "Diese Notiz aus den Favoriten entfernen?"
+    }
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "theme": "Design",
+    "language": "Sprache",
+    "darkMode": "Dunkler Modus",
+    "autoTheme": "Automatisches Design",
+    "notifications": "Benachrichtigungen",
+    "backup": "Sicherung & Sync",
+    "export": "Notizen exportieren",
+    "about": "Über",
+    "version": "Version",
+    "madeWith": "Mit ❤️ für Notizen gemacht",
+    "themes": {
+      "light": "Hell",
+      "dark": "Dunkel",
+      "solar": "Solar",
+      "mono": "Monochrom"
+    },
+    "languages": {
+      "en": "Englisch",
+      "ru": "Russisch",
+      "es": "Spanisch",
+      "de": "Deutsch",
+      "fr": "Französisch",
+      "pt": "Portugiesisch",
+      "ja": "Japanisch",
+      "zh": "Chinesisch",
+      "ko": "Koreanisch",
+      "uk": "Ukrainisch"
+    }
+  },
+  "common": {
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "remove": "Entfernen",
+    "save": "Speichern",
+    "edit": "Bearbeiten",
+    "done": "Fertig",
+    "back": "Zurück",
+    "ok": "OK",
+    "error": "Fehler",
+    "comingSoon": "Bald verfügbar",
+    "comingSoonMessage": "Diese Funktion wird bald hinzugefügt!",
+    "failed": "Fehlgeschlagen",
+    "success": "Erfolgreich"
+  },
+  "errors": {
+    "loadNotes": "Notizen konnten nicht geladen werden",
+    "createNote": "Notiz konnte nicht erstellt werden",
+    "deleteNote": "Notiz konnte nicht gelöscht werden",
+    "copyNote": "Notiz konnte nicht kopiert werden",
+    "shareNote": "Notiz konnte nicht geteilt werden",
+    "loadFavorites": "Lieblings-Notizen konnten nicht geladen werden"
+  }
+}

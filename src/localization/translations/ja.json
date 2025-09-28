@@ -1,0 +1,97 @@
+{
+  "app": {
+    "name": "Constella",
+    "subtitle": "あなたのデジタルノートブック"
+  },
+  "navigation": {
+    "notes": "ノート",
+    "favorites": "お気に入り",
+    "canvas": "空間キャンバス",
+    "settings": "設定"
+  },
+  "notes": {
+    "title": "ノート",
+    "newNote": "新しいノート",
+    "untitled": "無題",
+    "search": "ノートを検索...",
+    "empty": {
+      "title": "まだノートがありません",
+      "subtitle": "+ボタンをタップして最初のノートを作成してください"
+    },
+    "actions": {
+      "copy": "コピー",
+      "share": "共有",
+      "favorite": "お気に入り",
+      "delete": "削除"
+    },
+    "delete": {
+      "title": "ノートを削除",
+      "message": "このノートを削除してもよろしいですか？"
+    }
+  },
+  "favorites": {
+    "title": "お気に入り",
+    "empty": {
+      "title": "まだお気に入りがありません",
+      "subtitle": "お気に入りのノートにスターを付けてここに表示させてください"
+    },
+    "remove": {
+      "title": "お気に入りから削除",
+      "message": "このノートをお気に入りから削除しますか？"
+    }
+  },
+  "settings": {
+    "title": "設定",
+    "theme": "テーマ",
+    "language": "言語",
+    "darkMode": "ダークモード",
+    "autoTheme": "自動テーマ",
+    "notifications": "通知",
+    "backup": "バックアップと同期",
+    "export": "ノートをエクスポート",
+    "about": "アプリについて",
+    "version": "バージョン",
+    "madeWith": "ノート作成のために❤️で作られました",
+    "themes": {
+      "light": "ライト",
+      "dark": "ダーク",
+      "solar": "ソーラー",
+      "mono": "モノクロ"
+    },
+    "languages": {
+      "en": "英語",
+      "ru": "ロシア語",
+      "es": "スペイン語",
+      "de": "ドイツ語",
+      "fr": "フランス語",
+      "pt": "ポルトガル語",
+      "ja": "日本語",
+      "zh": "中国語",
+      "ko": "韓国語",
+      "uk": "ウクライナ語"
+    }
+  },
+  "common": {
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "remove": "削除",
+    "save": "保存",
+    "edit": "編集",
+    "done": "完了",
+    "back": "戻る",
+    "ok": "OK",
+    "error": "エラー",
+    "comingSoon": "近日公開",
+    "comingSoonMessage": "この機能はまもなく追加されます！",
+    "failed": "失敗",
+    "success": "成功"
+  },
+  "errors": {
+    "loadNotes": "ノートの読み込みに失敗しました",
+    "createNote": "ノートの作成に失敗しました",
+    "deleteNote": "ノートの削除に失敗しました",
+    "copyNote": "ノートのコピーに失敗しました",
+    "shareNote": "ノートの共有に失敗しました",
+    "loadFavorites": "お気に入りノートの読み込みに失敗しました"
+  }
+}

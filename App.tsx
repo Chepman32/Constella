@@ -6,6 +6,7 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from './src/contexts/ThemeContext';
+import { LocalizationProvider } from './src/contexts/LocalizationContext';
 import { databaseService } from './src/services/DatabaseService';
 import SplashScreen from './src/screens/SplashScreen';
 import NotesListScreen from './src/screens/NotesListScreen';
@@ -61,24 +62,26 @@ const App: React.FC = () => {
   return (
     <GestureHandlerRootView style={containerStyle}>
       <SafeAreaProvider>
-        <ThemeProvider>
-          <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-          <NavigationContainer>
-            <Drawer.Navigator
-              drawerContent={(props) => <CustomDrawerContent {...props} />}
-              screenOptions={{
-                headerShown: false,
-                drawerType: 'slide',
-                overlayColor: 'rgba(0, 0, 0, 0.5)',
-              }}
-            >
-              <Drawer.Screen name="MainStack" component={MainStackNavigator} />
-              <Drawer.Screen name="Favorites" component={FavoritesScreen} />
-              <Drawer.Screen name="Canvas" component={SpatialCanvasScreen} />
-              <Drawer.Screen name="Settings" component={SettingsScreen} />
-            </Drawer.Navigator>
-          </NavigationContainer>
-        </ThemeProvider>
+        <LocalizationProvider>
+          <ThemeProvider>
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+            <NavigationContainer>
+              <Drawer.Navigator
+                drawerContent={(props) => <CustomDrawerContent {...props} />}
+                screenOptions={{
+                  headerShown: false,
+                  drawerType: 'slide',
+                  overlayColor: 'rgba(0, 0, 0, 0.5)',
+                }}
+              >
+                <Drawer.Screen name="MainStack" component={MainStackNavigator} />
+                <Drawer.Screen name="Favorites" component={FavoritesScreen} />
+                <Drawer.Screen name="Canvas" component={SpatialCanvasScreen} />
+                <Drawer.Screen name="Settings" component={SettingsScreen} />
+              </Drawer.Navigator>
+            </NavigationContainer>
+          </ThemeProvider>
+        </LocalizationProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

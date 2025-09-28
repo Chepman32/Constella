@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Appearance, ColorSchemeName } from 'react-native';
+import { Appearance } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ThemeColors, Settings } from '../types';
+import { ThemeColors } from '../types';
 
 const lightTheme: ThemeColors = {
   primary: '#007AFF',

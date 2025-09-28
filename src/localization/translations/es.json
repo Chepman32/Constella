@@ -1,0 +1,97 @@
+{
+  "app": {
+    "name": "Constella",
+    "subtitle": "Tu cuaderno digital"
+  },
+  "navigation": {
+    "notes": "Notas",
+    "favorites": "Favoritos",
+    "canvas": "Lienzo Espacial",
+    "settings": "Configuración"
+  },
+  "notes": {
+    "title": "Notas",
+    "newNote": "Nueva Nota",
+    "untitled": "Sin título",
+    "search": "Buscar notas...",
+    "empty": {
+      "title": "Aún no hay notas",
+      "subtitle": "Toca el botón + para crear tu primera nota"
+    },
+    "actions": {
+      "copy": "Copiar",
+      "share": "Compartir",
+      "favorite": "Favorito",
+      "delete": "Eliminar"
+    },
+    "delete": {
+      "title": "Eliminar Nota",
+      "message": "¿Estás seguro de que quieres eliminar esta nota?"
+    }
+  },
+  "favorites": {
+    "title": "Favoritos",
+    "empty": {
+      "title": "Aún no hay favoritos",
+      "subtitle": "Marca tus notas favoritas para verlas aquí"
+    },
+    "remove": {
+      "title": "Quitar Favorito",
+      "message": "¿Quitar esta nota de favoritos?"
+    }
+  },
+  "settings": {
+    "title": "Configuración",
+    "theme": "Tema",
+    "language": "Idioma",
+    "darkMode": "Modo Oscuro",
+    "autoTheme": "Tema Automático",
+    "notifications": "Notificaciones",
+    "backup": "Copia de Seguridad",
+    "export": "Exportar Notas",
+    "about": "Acerca de",
+    "version": "Versión",
+    "madeWith": "Hecho con ❤️ para tomar notas",
+    "themes": {
+      "light": "Claro",
+      "dark": "Oscuro",
+      "solar": "Solar",
+      "mono": "Monocromo"
+    },
+    "languages": {
+      "en": "Inglés",
+      "ru": "Ruso",
+      "es": "Español",
+      "de": "Alemán",
+      "fr": "Francés",
+      "pt": "Portugués",
+      "ja": "Japonés",
+      "zh": "Chino",
+      "ko": "Coreano",
+      "uk": "Ucraniano"
+    }
+  },
+  "common": {
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "remove": "Quitar",
+    "save": "Guardar",
+    "edit": "Editar",
+    "done": "Hecho",
+    "back": "Atrás",
+    "ok": "OK",
+    "error": "Error",
+    "comingSoon": "Próximamente",
+    "comingSoonMessage": "¡Esta funcionalidad se agregará pronto!",
+    "failed": "Falló",
+    "success": "Éxito"
+  },
+  "errors": {
+    "loadNotes": "Error al cargar las notas",
+    "createNote": "Error al crear la nota",
+    "deleteNote": "Error al eliminar la nota",
+    "copyNote": "Error al copiar la nota",
+    "shareNote": "Error al compartir la nota",
+    "loadFavorites": "Error al cargar las notas favoritas"
+  }
+}

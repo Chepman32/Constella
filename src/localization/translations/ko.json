@@ -1,0 +1,97 @@
+{
+  "app": {
+    "name": "Constella",
+    "subtitle": "당신의 디지털 노트북"
+  },
+  "navigation": {
+    "notes": "노트",
+    "favorites": "즐겨찾기",
+    "canvas": "공간 캔버스",
+    "settings": "설정"
+  },
+  "notes": {
+    "title": "노트",
+    "newNote": "새 노트",
+    "untitled": "제목 없음",
+    "search": "노트 검색...",
+    "empty": {
+      "title": "아직 노트가 없습니다",
+      "subtitle": "+ 버튼을 눌러 첫 번째 노트를 만드세요"
+    },
+    "actions": {
+      "copy": "복사",
+      "share": "공유",
+      "favorite": "즐겨찾기",
+      "delete": "삭제"
+    },
+    "delete": {
+      "title": "노트 삭제",
+      "message": "이 노트를 삭제하시겠습니까?"
+    }
+  },
+  "favorites": {
+    "title": "즐겨찾기",
+    "empty": {
+      "title": "아직 즐겨찾기가 없습니다",
+      "subtitle": "좋아하는 노트에 별표를 하여 여기에서 볼 수 있습니다"
+    },
+    "remove": {
+      "title": "즐겨찾기 제거",
+      "message": "이 노트를 즐겨찾기에서 제거하시겠습니까?"
+    }
+  },
+  "settings": {
+    "title": "설정",
+    "theme": "테마",
+    "language": "언어",
+    "darkMode": "다크 모드",
+    "autoTheme": "자동 테마",
+    "notifications": "알림",
+    "backup": "백업 및 동기화",
+    "export": "노트 내보내기",
+    "about": "정보",
+    "version": "버전",
+    "madeWith": "노트를 위해 ❤️로 제작됨",
+    "themes": {
+      "light": "라이트",
+      "dark": "다크",
+      "solar": "솔라",
+      "mono": "모노"
+    },
+    "languages": {
+      "en": "영어",
+      "ru": "러시아어",
+      "es": "스페인어",
+      "de": "독일어",
+      "fr": "프랑스어",
+      "pt": "포르투갈어",
+      "ja": "일본어",
+      "zh": "중국어",
+      "ko": "한국어",
+      "uk": "우크라이나어"
+    }
+  },
+  "common": {
+    "cancel": "취소",
+    "delete": "삭제",
+    "remove": "제거",
+    "save": "저장",
+    "edit": "편집",
+    "done": "완료",
+    "back": "뒤로",
+    "ok": "확인",
+    "error": "오류",
+    "comingSoon": "곧 출시",
+    "comingSoonMessage": "이 기능은 곧 추가될 예정입니다!",
+    "failed": "실패",
+    "success": "성공"
+  },
+  "errors": {
+    "loadNotes": "노트 로드 실패",
+    "createNote": "노트 생성 실패",
+    "deleteNote": "노트 삭제 실패",
+    "copyNote": "노트 복사 실패",
+    "shareNote": "노트 공유 실패",
+    "loadFavorites": "즐겨찾기 노트 로드 실패"
+  }
+}

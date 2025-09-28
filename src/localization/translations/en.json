@@ -1,0 +1,97 @@
+{
+  "app": {
+    "name": "Constella",
+    "subtitle": "Your digital notebook"
+  },
+  "navigation": {
+    "notes": "Notes",
+    "favorites": "Favorites",
+    "canvas": "Spatial Canvas",
+    "settings": "Settings"
+  },
+  "notes": {
+    "title": "Notes",
+    "newNote": "New Note",
+    "untitled": "Untitled",
+    "search": "Search notes...",
+    "empty": {
+      "title": "No notes yet",
+      "subtitle": "Tap the + button to create your first note"
+    },
+    "actions": {
+      "copy": "Copy",
+      "share": "Share",
+      "favorite": "Favorite",
+      "delete": "Delete"
+    },
+    "delete": {
+      "title": "Delete Note",
+      "message": "Are you sure you want to delete this note?"
+    }
+  },
+  "favorites": {
+    "title": "Favorites",
+    "empty": {
+      "title": "No favorites yet",
+      "subtitle": "Star your favorite notes to see them here"
+    },
+    "remove": {
+      "title": "Remove Favorite",
+      "message": "Remove this note from favorites?"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "theme": "Theme",
+    "language": "Language",
+    "darkMode": "Dark Mode",
+    "autoTheme": "Auto Theme",
+    "notifications": "Notifications",
+    "backup": "Backup & Sync",
+    "export": "Export Notes",
+    "about": "About",
+    "version": "Version",
+    "madeWith": "Made with ❤️ for note-taking",
+    "themes": {
+      "light": "Light",
+      "dark": "Dark",
+      "solar": "Solar",
+      "mono": "Mono"
+    },
+    "languages": {
+      "en": "English",
+      "ru": "Russian",
+      "es": "Spanish",
+      "de": "German",
+      "fr": "French",
+      "pt": "Portuguese",
+      "ja": "Japanese",
+      "zh": "Chinese",
+      "ko": "Korean",
+      "uk": "Ukrainian"
+    }
+  },
+  "common": {
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "remove": "Remove",
+    "save": "Save",
+    "edit": "Edit",
+    "done": "Done",
+    "back": "Back",
+    "ok": "OK",
+    "error": "Error",
+    "comingSoon": "Coming Soon",
+    "comingSoonMessage": "This functionality will be added soon!",
+    "failed": "Failed",
+    "success": "Success"
+  },
+  "errors": {
+    "loadNotes": "Failed to load notes",
+    "createNote": "Failed to create note",
+    "deleteNote": "Failed to delete note",
+    "copyNote": "Failed to copy note",
+    "shareNote": "Failed to share note",
+    "loadFavorites": "Failed to load favorite notes"
+  }
+}

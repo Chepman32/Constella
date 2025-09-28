@@ -6,36 +6,38 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
-import { DrawerContentScrollView, DrawerContentComponentProps } from '@react-navigation/drawer';
+import { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLocalization } from '../contexts/LocalizationContext';
 
 const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
   const { theme, themeName } = useTheme();
+  const { t } = useLocalization();
   const { navigation, state } = props;
 
   const menuItems = [
     {
       id: 'Notes',
-      label: 'Notes',
+      label: t('navigation.notes'),
       icon: '📝',
       screen: 'Notes',
     },
     {
       id: 'Favorites',
-      label: 'Favorites',
+      label: t('navigation.favorites'),
       icon: '⭐️',
       screen: 'Favorites',
     },
     {
       id: 'Canvas',
-      label: 'Spatial Canvas',
+      label: t('navigation.canvas'),
       icon: '🗺️',
       screen: 'Canvas',
     },
     {
       id: 'Settings',
-      label: 'Settings',
+      label: t('navigation.settings'),
       icon: '⚙️',
       screen: 'Settings',
     },
@@ -51,9 +53,9 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
-        <Text style={[styles.appName, { color: theme.text }]}>Constella</Text>
+        <Text style={[styles.appName, { color: theme.text }]}>{t('app.name')}</Text>
         <Text style={[styles.appSubtitle, { color: theme.textSecondary }]}>
-          Your digital notebook
+          {t('app.subtitle')}
         </Text>
       </View>
 

@@ -34,14 +34,22 @@ Constella is an innovative offline-first note-taking mobile application built wi
 
 - [x] Set up React Native project structure and core dependencies
 - [x] Implement database schema and offline storage with SQLite
-- [x] Create theme system with Light, Dark, Solar, and Mono themes
+- [x] Create enhanced theme system with 4 themes (Light, Dark, Solar, Mono)
 - [x] Build animated splash screen with physics-based logo animation
 - [x] Implement main notes list screen with search functionality
 - [x] Create rich text note editor with formatting toolbar
+- [x] **NEW**: Implement drawer navigation with custom sidebar design
+- [x] **NEW**: Add comprehensive localization system for 10 languages
+- [x] **NEW**: Create advanced Settings screen with theme and language selectors
+- [x] **NEW**: Build Favorites screen for starred notes
+- [x] **NEW**: Add context menus with copy, share, favorite, and delete actions
+- [x] **NEW**: Implement smooth animations and haptic feedback
+- [x] **NEW**: Add auto-theme switching based on system preference
+- [x] **NEW**: Create modal dialogs for theme and language selection
 
 ### 🚧 In Progress
 
-Currently working on: Drawing and handwriting support using React Native Skia
+Currently working on: Testing all themes and languages across all screens
 
 ### 📋 Upcoming Tasks
 
@@ -52,8 +60,10 @@ Currently working on: Drawing and handwriting support using React Native Skia
 - [ ] Add focus mode with ambient sounds and distraction-free UI
 - [ ] Implement intelligent auto-formatting and templates
 - [ ] Add gesture-based interactions and micro-animations
-- [ ] Implement settings screen with theme, sound, and haptics controls
-- [ ] Add localization support for 10+ languages
+- [ ] Implement backup and sync functionality
+- [ ] Add export options (PDF, Markdown, plain text)
+- [ ] Implement note templates and smart formatting
+- [ ] Add voice notes and audio attachments
 - [ ] Implement in-app purchases and premium features
 - [ ] Add delightful details, easter eggs, and achievements
 
@@ -122,6 +132,23 @@ src/
 - **Adaptive Themes**: Content-aware visual effects
 - **Micro-interactions**: Delightful animations throughout
 - **Haptic Feedback**: Tactile responses for actions
+
+### 🌍 Internationalization Features
+- **10 Languages Supported**: English, Russian, Spanish, German, French, Portuguese, Japanese, Chinese, Korean, Ukrainian
+- **Automatic Language Detection**: Uses device language as default
+- **Runtime Language Switching**: Change language without app restart
+- **Native Language Names**: Languages displayed in their native scripts
+- **Persistent Settings**: Language preference saved locally
+
+### 🎨 Advanced Theming
+- **4 Beautiful Themes**:
+  - ☀️ **Light**: Clean and bright interface
+  - 🌙 **Dark**: Easy on the eyes for low-light environments
+  - 🌅 **Solar**: Warm, golden tones inspired by Solarized
+  - ⚫ **Mono**: Minimalist grayscale design
+- **Auto Theme Switching**: Follows system light/dark mode preference
+- **Theme Preview**: Visual theme selector with live preview
+- **Consistent Color System**: All UI elements adapt to selected theme
 
 ## Privacy & Security
 

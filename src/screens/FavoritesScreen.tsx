@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Animated, { Layout, FadeInDown } from 'react-native-reanimated';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLocalization } from '../contexts/LocalizationContext';
 import { databaseService } from '../services/DatabaseService';
 import { Note } from '../types';
 import { formatDate, truncateText, extractTextFromMarkdown } from '../utils';
@@ -22,6 +23,7 @@ interface FavoritesScreenProps {
 
 const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
   const { theme } = useTheme();
+  const { t } = useLocalization();
   const [favoriteNotes, setFavoriteNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -35,11 +37,11 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
       setFavoriteNotes(allNotes.slice(0, 3));
     } catch (error) {
       console.error('Failed to load favorite notes:', error);
-      Alert.alert('Error', 'Failed to load favorite notes');
+      Alert.alert(t('common.error'), t('errors.loadFavorites'));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -49,12 +51,12 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
 
   const removeFavorite = async (noteId: string) => {
     Alert.alert(
-      'Remove Favorite',
-      'Remove this note from favorites?',
+      t('favorites.remove.title'),
+      t('favorites.remove.message'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Remove',
+          text: t('common.remove'),
           style: 'destructive',
           onPress: () => {
             // TODO: Implement actual favorite removal
@@ -88,7 +90,7 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
             <View style={styles.noteTitle}>
               <Text style={[styles.favoriteIcon, { color: theme.accent }]}>⭐️</Text>
               <Text style={[styles.noteText, { color: theme.text }]} numberOfLines={1}>
-                {item.title || 'Untitled'}
+                {item.title || t('notes.untitled')}
               </Text>
             </View>
             <TouchableOpacity
@@ -137,10 +139,10 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
     <View style={styles.emptyState}>
       <Text style={styles.emptyIcon}>⭐️</Text>
       <Text style={[styles.emptyStateTitle, { color: theme.text }]}>
-        No favorites yet
+        {t('favorites.empty.title')}
       </Text>
       <Text style={[styles.emptyStateSubtitle, { color: theme.textSecondary }]}>
-        Star your favorite notes to see them here
+        {t('favorites.empty.subtitle')}
       </Text>
     </View>
   );
@@ -154,7 +156,7 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
         >
           <Text style={[styles.backIcon, { color: theme.primary }]}>←</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, { color: theme.text }]}>Favorites</Text>
+        <Text style={[styles.title, { color: theme.text }]}>{t('favorites.title')}</Text>
         <View style={styles.placeholder} />
       </View>
 

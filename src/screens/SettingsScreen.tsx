@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Switch,
   Modal,
   FlatList,
   Alert,
@@ -14,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLocalization } from '../contexts/LocalizationContext';
+import IOSSwitch from '../components/IOSSwitch';
 
 interface SettingsScreenProps {
   navigation: any;
@@ -27,6 +27,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
+
 
   const themes = [
     { key: 'light', name: t('settings.themes.light'), icon: '☀️' },
@@ -67,8 +68,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         styles.modalItem,
         item.key === themeName && { backgroundColor: theme.primary + '15' },
       ]}
-      onPress={async () => {
-        await setTheme(item.key as any);
+      onPress={() => {
+        setTheme(item.key as any);
         setShowThemeModal(false);
       }}
     >
@@ -129,13 +130,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               <Text style={[styles.rowLabel, { color: theme.text }]}>
                 {t('settings.sound')}
               </Text>
-              <Switch
+              <IOSSwitch
                 value={soundEnabled}
                 onValueChange={setSoundEnabled}
                 trackColor={{ false: theme.border, true: theme.primary }}
                 thumbColor={soundEnabled ? '#ffffff' : '#f4f3f4'}
-                ios_backgroundColor={theme.border}
-                pointerEvents="none"
                 accessible={false}
                 style={styles.switchControl}
               />
@@ -156,13 +155,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               <Text style={[styles.rowLabel, { color: theme.text }]}>
                 {t('settings.haptics')}
               </Text>
-              <Switch
+              <IOSSwitch
                 value={hapticsEnabled}
                 onValueChange={setHapticsEnabled}
                 trackColor={{ false: theme.border, true: theme.primary }}
                 thumbColor={hapticsEnabled ? '#ffffff' : '#f4f3f4'}
-                ios_backgroundColor={theme.border}
-                pointerEvents="none"
                 accessible={false}
                 style={styles.switchControl}
               />
@@ -309,31 +306,20 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <Text style={[styles.modalTitle, { color: theme.text }]}>
               {t('settings.theme')}
             </Text>
-            <Pressable
-              style={({ pressed }) => [
-                styles.modalSwitchRow,
-                { borderColor: theme.border },
-                pressed && styles.rowPressed,
-              ]}
-              onPress={() => setAutoTheme(!autoTheme)}
-              accessibilityRole="switch"
-              accessibilityState={{ checked: autoTheme }}
+            <View style={[styles.modalSwitchRow, { borderColor: theme.border }]}
+              accessible
               accessibilityLabel={t('settings.autoTheme')}
             >
               <Text style={[styles.modalSwitchLabel, { color: theme.text }]}>
                 {t('settings.autoTheme')}
               </Text>
-              <Switch
+              <IOSSwitch
                 value={autoTheme}
                 onValueChange={setAutoTheme}
                 trackColor={{ false: theme.border, true: theme.primary }}
                 thumbColor={autoTheme ? '#ffffff' : '#f4f3f4'}
-                ios_backgroundColor={theme.border}
-                pointerEvents="none"
-                accessible={false}
-                style={styles.modalSwitch}
               />
-            </Pressable>
+            </View>
             <FlatList
               data={themes}
               keyExtractor={item => item.key}
@@ -652,9 +638,6 @@ const styles = StyleSheet.create({
   modalSwitchLabel: {
     fontSize: 15,
     fontWeight: '500',
-  },
-  modalSwitch: {
-    marginRight: 60,
   },
 });
 

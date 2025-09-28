@@ -293,12 +293,18 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         animationType="fade"
         onRequestClose={() => setShowThemeModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowThemeModal(false)}
+        >
+          <TouchableOpacity
             style={[
               styles.modalContent,
               { backgroundColor: theme.surface, borderColor: theme.border },
             ]}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
           >
             <Text style={[styles.modalTitle, { color: theme.text }]}>
               {t('settings.theme')}
@@ -337,8 +343,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
                 {t('common.cancel')}
               </Text>
             </TouchableOpacity>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
       <Modal
@@ -347,12 +353,18 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         animationType="fade"
         onRequestClose={() => setShowLanguageModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowLanguageModal(false)}
+        >
+          <TouchableOpacity
             style={[
               styles.modalContent,
               { backgroundColor: theme.surface, borderColor: theme.border },
             ]}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
           >
             <Text style={[styles.modalTitle, { color: theme.text }]}>
               {t('settings.language')}
@@ -402,8 +414,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
                 {t('common.cancel')}
               </Text>
             </TouchableOpacity>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );
@@ -622,7 +634,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 24,
-    paddingBottom: 16,
+    paddingTop: 8,
+    paddingBottom: 20,
+    marginBottom: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   modalSwitchLabel: {

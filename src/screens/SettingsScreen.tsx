@@ -392,7 +392,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
                     {item.nativeName}
                   </Text>
                   <Text style={[styles.modalItemSubtext, { color: theme.textSecondary }]}>
-                    {item.name}
+                    {t(`settings.languages.${item.code}`)}
                   </Text>
                   {item.code === language && (
                     <Text style={[styles.checkmark, { color: theme.primary }]}>✓</Text>

@@ -70,21 +70,21 @@
       "ko": "Coréen",
       "uk": "Ukrainien"
     },
-    "quickControls": "Quick Controls",
-    "sound": "Sound",
-    "haptics": "Haptics",
-    "appearance": "Appearance",
+    "quickControls": "Contrôles Rapides",
+    "sound": "Son",
+    "haptics": "Haptiques",
+    "appearance": "Apparence",
     "becomePro": {
-      "title": "Become a Pro",
-      "subtitle": "Unlock Spatial Canvas, Graph, Unlimited History",
-      "cta": "Upgrade"
+      "title": "Devenir Pro",
+      "subtitle": "Débloquer le Canevas Spatial, le Graphique, l'Historique Illimité",
+      "cta": "Mettre à niveau"
     },
-    "dataPrivacy": "Data & Privacy",
-    "exportZip": "Export (ZIP)",
-    "import": "Import",
-    "clearLocalData": "Clear Local Data",
-    "clearLocalDataTitle": "Clear Local Data?",
-    "clearLocalDataMessage": "This will remove all local notes from this device."
+    "dataPrivacy": "Données et Confidentialité",
+    "exportZip": "Exporter (ZIP)",
+    "import": "Importer",
+    "clearLocalData": "Effacer les Données Locales",
+    "clearLocalDataTitle": "Effacer les Données Locales ?",
+    "clearLocalDataMessage": "Cela supprimera toutes les notes locales de cet appareil."
   },
   "common": {
     "cancel": "Annuler",

@@ -70,21 +70,21 @@
       "ko": "Корейська",
       "uk": "Українська"
     },
-    "quickControls": "Quick Controls",
-    "sound": "Sound",
-    "haptics": "Haptics",
-    "appearance": "Appearance",
+    "quickControls": "Швидкі налаштування",
+    "sound": "Звук",
+    "haptics": "Вібрація",
+    "appearance": "Зовнішній вигляд",
     "becomePro": {
-      "title": "Become a Pro",
-      "subtitle": "Unlock Spatial Canvas, Graph, Unlimited History",
-      "cta": "Upgrade"
+      "title": "Стати Pro",
+      "subtitle": "Розблокувати просторове полотно, граф, необмежену історію",
+      "cta": "Оновити"
     },
-    "dataPrivacy": "Data & Privacy",
-    "exportZip": "Export (ZIP)",
-    "import": "Import",
-    "clearLocalData": "Clear Local Data",
-    "clearLocalDataTitle": "Clear Local Data?",
-    "clearLocalDataMessage": "This will remove all local notes from this device."
+    "dataPrivacy": "Дані та конфіденційність",
+    "exportZip": "Експорт (ZIP)",
+    "import": "Імпорт",
+    "clearLocalData": "Очистити локальні дані",
+    "clearLocalDataTitle": "Очистити локальні дані?",
+    "clearLocalDataMessage": "Це видалить усі локальні нотатки з цього пристрою."
   },
   "common": {
     "cancel": "Скасувати",

@@ -70,21 +70,21 @@
       "ko": "韓国語",
       "uk": "ウクライナ語"
     },
-    "quickControls": "Quick Controls",
-    "sound": "Sound",
-    "haptics": "Haptics",
-    "appearance": "Appearance",
+    "quickControls": "クイックコントロール",
+    "sound": "サウンド",
+    "haptics": "ハプティクス",
+    "appearance": "外観",
     "becomePro": {
-      "title": "Become a Pro",
-      "subtitle": "Unlock Spatial Canvas, Graph, Unlimited History",
-      "cta": "Upgrade"
+      "title": "Proになる",
+      "subtitle": "空間キャンバス、グラフ、無制限の履歴をアンロック",
+      "cta": "アップグレード"
     },
-    "dataPrivacy": "Data & Privacy",
-    "exportZip": "Export (ZIP)",
-    "import": "Import",
-    "clearLocalData": "Clear Local Data",
-    "clearLocalDataTitle": "Clear Local Data?",
-    "clearLocalDataMessage": "This will remove all local notes from this device."
+    "dataPrivacy": "データとプライバシー",
+    "exportZip": "エクスポート (ZIP)",
+    "import": "インポート",
+    "clearLocalData": "ローカルデータをクリア",
+    "clearLocalDataTitle": "ローカルデータをクリアしますか？",
+    "clearLocalDataMessage": "このデバイスからすべてのローカルノートが削除されます。"
   },
   "common": {
     "cancel": "キャンセル",

@@ -70,21 +70,21 @@
       "ko": "韩语",
       "uk": "乌克兰语"
     },
-    "quickControls": "Quick Controls",
-    "sound": "Sound",
-    "haptics": "Haptics",
-    "appearance": "Appearance",
+    "quickControls": "快速控制",
+    "sound": "声音",
+    "haptics": "触觉反馈",
+    "appearance": "外观",
     "becomePro": {
-      "title": "Become a Pro",
-      "subtitle": "Unlock Spatial Canvas, Graph, Unlimited History",
-      "cta": "Upgrade"
+      "title": "成为专业版",
+      "subtitle": "解锁空间画布、图表、无限历史记录",
+      "cta": "升级"
     },
-    "dataPrivacy": "Data & Privacy",
-    "exportZip": "Export (ZIP)",
-    "import": "Import",
-    "clearLocalData": "Clear Local Data",
-    "clearLocalDataTitle": "Clear Local Data?",
-    "clearLocalDataMessage": "This will remove all local notes from this device."
+    "dataPrivacy": "数据与隐私",
+    "exportZip": "导出 (ZIP)",
+    "import": "导入",
+    "clearLocalData": "清除本地数据",
+    "clearLocalDataTitle": "清除本地数据？",
+    "clearLocalDataMessage": "这将从此设备中删除所有本地笔记。"
   },
   "common": {
     "cancel": "取消",

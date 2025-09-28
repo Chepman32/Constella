@@ -70,21 +70,21 @@
       "ko": "한국어",
       "uk": "우크라이나어"
     },
-    "quickControls": "Quick Controls",
-    "sound": "Sound",
-    "haptics": "Haptics",
-    "appearance": "Appearance",
+    "quickControls": "빠른 설정",
+    "sound": "사운드",
+    "haptics": "햅틱",
+    "appearance": "외관",
     "becomePro": {
-      "title": "Become a Pro",
-      "subtitle": "Unlock Spatial Canvas, Graph, Unlimited History",
-      "cta": "Upgrade"
+      "title": "프로 버전",
+      "subtitle": "공간 캔버스, 그래프, 무제한 기록 잠금 해제",
+      "cta": "업그레이드"
     },
-    "dataPrivacy": "Data & Privacy",
-    "exportZip": "Export (ZIP)",
-    "import": "Import",
-    "clearLocalData": "Clear Local Data",
-    "clearLocalDataTitle": "Clear Local Data?",
-    "clearLocalDataMessage": "This will remove all local notes from this device."
+    "dataPrivacy": "데이터 및 개인정보",
+    "exportZip": "내보내기 (ZIP)",
+    "import": "가져오기",
+    "clearLocalData": "로컬 데이터 삭제",
+    "clearLocalDataTitle": "로컬 데이터를 삭제하시겠습니까?",
+    "clearLocalDataMessage": "이 기기의 모든 로컬 노트가 제거됩니다."
   },
   "common": {
     "cancel": "취소",

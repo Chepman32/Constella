@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Import i18n with error handling
@@ -53,25 +52,63 @@ const fallbackT = (key: string): string => {
 };
 
 export const LocalizationProvider: React.FC<LocalizationProviderProps> = ({ children }) => {
-  const translationResult = i18nReady ? useTranslation() : { i18n: null, t: fallbackT };
-  const { i18n, t } = translationResult;
-  const [language, setLanguageState] = useState(i18n?.language || 'en');
+  // Always call useTranslation but handle errors gracefully
+  const [translationState, setTranslationState] = useState<{
+    i18n: any;
+    t: (key: string, options?: any) => string;
+  }>({
+    i18n: null,
+    t: fallbackT
+  });
 
-  useEffect(() => {
-    if (!i18n) return;
+  const [language, setLanguageState] = useState('en');
 
-    const handleLanguageChange = (lng: string) => {
-      setLanguageState(lng);
-    };
+  // Try to use i18n translation
+  React.useEffect(() => {
+    if (!i18nReady) {
+      return;
+    }
 
-    i18n.on('languageChanged', handleLanguageChange);
-    return () => i18n.off('languageChanged', handleLanguageChange);
-  }, [i18n]);
+    try {
+      // Import i18n instance directly
+      const i18nInstance = require('../localization/i18n').default;
+
+      // Wait for i18n to be ready
+      if (i18nInstance.isInitialized) {
+        setTranslationState({
+          i18n: i18nInstance,
+          t: i18nInstance.t.bind(i18nInstance)
+        });
+        setLanguageState(i18nInstance.language);
+      } else {
+        i18nInstance.on('initialized', () => {
+          setTranslationState({
+            i18n: i18nInstance,
+            t: i18nInstance.t.bind(i18nInstance)
+          });
+          setLanguageState(i18nInstance.language);
+        });
+      }
+
+      const handleLanguageChange = (lng: string) => {
+        setLanguageState(lng);
+      };
+
+      i18nInstance.on('languageChanged', handleLanguageChange);
+
+      return () => {
+        i18nInstance.off('languageChanged', handleLanguageChange);
+        i18nInstance.off('initialized');
+      };
+    } catch (error) {
+      console.warn('Failed to initialize i18n, using fallback:', error);
+    }
+  }, []);
 
   const setLanguage = async (newLanguage: string) => {
     try {
-      if (i18n) {
-        await i18n.changeLanguage(newLanguage);
+      if (translationState.i18n) {
+        await translationState.i18n.changeLanguage(newLanguage);
       }
       await AsyncStorage.setItem('language', newLanguage);
       setLanguageState(newLanguage);
@@ -83,7 +120,7 @@ export const LocalizationProvider: React.FC<LocalizationProviderProps> = ({ chil
   const value: LocalizationContextType = {
     language,
     setLanguage,
-    t,
+    t: translationState.t,
     availableLanguages,
   };
 

@@ -70,21 +70,31 @@ const LANGUAGE_DETECTOR = {
   },
 };
 
-i18n
-  .use(LANGUAGE_DETECTOR)
-  .use(initReactI18next)
-  .init({
-    resources,
-    fallbackLng: 'en',
-    debug: __DEV__,
+// Initialize i18n
+const initI18n = async () => {
+  try {
+    await i18n
+      .use(LANGUAGE_DETECTOR)
+      .use(initReactI18next)
+      .init({
+        resources,
+        fallbackLng: 'en',
+        debug: __DEV__,
 
-    interpolation: {
-      escapeValue: false, // React already does escaping
-    },
+        interpolation: {
+          escapeValue: false, // React already does escaping
+        },
 
-    react: {
-      useSuspense: false,
-    },
-  });
+        react: {
+          useSuspense: false,
+        },
+      });
+  } catch (error) {
+    console.error('Failed to initialize i18n:', error);
+  }
+};
+
+// Start initialization
+initI18n();
 
 export default i18n;

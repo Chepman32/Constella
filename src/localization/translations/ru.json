@@ -70,21 +70,21 @@
       "ko": "Корейский",
       "uk": "Украинский"
     },
-    "quickControls": "Quick Controls",
-    "sound": "Sound",
-    "haptics": "Haptics",
-    "appearance": "Appearance",
+    "quickControls": "Быстрые настройки",
+    "sound": "Звук",
+    "haptics": "Вибрация",
+    "appearance": "Внешний вид",
     "becomePro": {
-      "title": "Become a Pro",
-      "subtitle": "Unlock Spatial Canvas, Graph, Unlimited History",
-      "cta": "Upgrade"
+      "title": "Стать Pro",
+      "subtitle": "Разблокировать пространственный холст, граф, неограниченную историю",
+      "cta": "Обновить"
     },
-    "dataPrivacy": "Data & Privacy",
-    "exportZip": "Export (ZIP)",
-    "import": "Import",
-    "clearLocalData": "Clear Local Data",
-    "clearLocalDataTitle": "Clear Local Data?",
-    "clearLocalDataMessage": "This will remove all local notes from this device."
+    "dataPrivacy": "Данные и конфиденциальность",
+    "exportZip": "Экспорт (ZIP)",
+    "import": "Импорт",
+    "clearLocalData": "Очистить локальные данные",
+    "clearLocalDataTitle": "Очистить локальные данные?",
+    "clearLocalDataMessage": "Это удалит все локальные заметки с этого устройства."
   },
   "common": {
     "cancel": "Отмена",

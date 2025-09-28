@@ -9,6 +9,7 @@ import {
   Modal,
   FlatList,
   Alert,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
@@ -106,15 +107,25 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <View style={[styles.card, { backgroundColor: theme.surface }]}
-          accessible
-          accessibilityLabel={t('settings.quickControls')}
+        <View
+          style={[styles.card, styles.quickControlsCard, { backgroundColor: theme.surface }]}
         >
           <Text style={[styles.cardTitle, { color: theme.text }]}>
             {t('settings.quickControls')}
           </Text>
           <View style={styles.cardBody}>
-            <View style={styles.row}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.row,
+                styles.toggleRow,
+                pressed && styles.rowPressed,
+              ]}
+              onPress={() => setSoundEnabled(value => !value)}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: soundEnabled }}
+              accessibilityLabel={t('settings.sound')}
+              hitSlop={4}
+            >
               <Text style={[styles.rowLabel, { color: theme.text }]}>
                 {t('settings.sound')}
               </Text>
@@ -124,9 +135,24 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
                 trackColor={{ false: theme.border, true: theme.primary }}
                 thumbColor={soundEnabled ? '#ffffff' : '#f4f3f4'}
                 ios_backgroundColor={theme.border}
+                pointerEvents="none"
+                accessible={false}
+                style={styles.switchControl}
               />
-            </View>
-            <View style={[styles.row, cardDividerStyle]}>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [
+                styles.row,
+                styles.toggleRow,
+                cardDividerStyle,
+                pressed && styles.rowPressed,
+              ]}
+              onPress={() => setHapticsEnabled(value => !value)}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: hapticsEnabled }}
+              accessibilityLabel={t('settings.haptics')}
+              hitSlop={4}
+            >
               <Text style={[styles.rowLabel, { color: theme.text }]}>
                 {t('settings.haptics')}
               </Text>
@@ -136,8 +162,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
                 trackColor={{ false: theme.border, true: theme.primary }}
                 thumbColor={hapticsEnabled ? '#ffffff' : '#f4f3f4'}
                 ios_backgroundColor={theme.border}
+                pointerEvents="none"
+                accessible={false}
+                style={styles.switchControl}
               />
-            </View>
+            </Pressable>
           </View>
         </View>
 
@@ -411,14 +440,20 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
   },
   card: {
+    width: '100%',
     borderRadius: 24,
-    padding: 20,
+    paddingVertical: 20,
+    paddingLeft: 20,
+    paddingRight: 20,
     marginBottom: 20,
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
     elevation: 2,
+  },
+  quickControlsCard: {
+    paddingRight: 24,
   },
   singleRowCard: {
     flexDirection: 'row',
@@ -437,6 +472,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 12,
+    paddingRight: 12,
+  },
+  toggleRow: {
+    borderRadius: 16,
+  },
+  rowPressed: {
+    opacity: 0.75,
   },
   rowWithValue: {
     marginTop: 4,
@@ -444,6 +486,8 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontSize: 16,
     fontWeight: '500',
+    flex: 1,
+    paddingRight: 12,
   },
   rowRight: {
     flexDirection: 'row',
@@ -452,6 +496,9 @@ const styles = StyleSheet.create({
   rowValue: {
     fontSize: 15,
     fontWeight: '500',
+  },
+  switchControl: {
+    marginRight: 6,
   },
   rowChevron: {
     fontSize: 18,

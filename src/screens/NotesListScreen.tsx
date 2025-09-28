@@ -361,7 +361,10 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
         </View>
       </View>
 
-      <Animated.View style={[styles.searchContainer, searchAnimatedStyle]}>
+      <Animated.View
+        style={[styles.searchContainer, searchAnimatedStyle]}
+        pointerEvents={isSearchActive ? 'auto' : 'none'}
+      >
         <TextInput
           style={[
             styles.searchInput,

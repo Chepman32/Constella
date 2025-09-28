@@ -309,8 +309,15 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <Text style={[styles.modalTitle, { color: theme.text }]}>
               {t('settings.theme')}
             </Text>
-            <View style={[styles.modalSwitchRow, { borderColor: theme.border }]}
-              accessible
+            <Pressable
+              style={({ pressed }) => [
+                styles.modalSwitchRow,
+                { borderColor: theme.border },
+                pressed && styles.rowPressed,
+              ]}
+              onPress={() => setAutoTheme(!autoTheme)}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: autoTheme }}
               accessibilityLabel={t('settings.autoTheme')}
             >
               <Text style={[styles.modalSwitchLabel, { color: theme.text }]}>
@@ -322,8 +329,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
                 trackColor={{ false: theme.border, true: theme.primary }}
                 thumbColor={autoTheme ? '#ffffff' : '#f4f3f4'}
                 ios_backgroundColor={theme.border}
+                pointerEvents="none"
+                accessible={false}
+                style={styles.modalSwitch}
               />
-            </View>
+            </Pressable>
             <FlatList
               data={themes}
               keyExtractor={item => item.key}
@@ -642,6 +652,9 @@ const styles = StyleSheet.create({
   modalSwitchLabel: {
     fontSize: 15,
     fontWeight: '500',
+  },
+  modalSwitch: {
+    marginRight: 60,
   },
 });
 

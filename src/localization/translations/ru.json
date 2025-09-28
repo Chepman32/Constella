@@ -69,7 +69,22 @@
       "zh": "Китайский",
       "ko": "Корейский",
       "uk": "Украинский"
-    }
+    },
+    "quickControls": "Quick Controls",
+    "sound": "Sound",
+    "haptics": "Haptics",
+    "appearance": "Appearance",
+    "becomePro": {
+      "title": "Become a Pro",
+      "subtitle": "Unlock Spatial Canvas, Graph, Unlimited History",
+      "cta": "Upgrade"
+    },
+    "dataPrivacy": "Data & Privacy",
+    "exportZip": "Export (ZIP)",
+    "import": "Import",
+    "clearLocalData": "Clear Local Data",
+    "clearLocalDataTitle": "Clear Local Data?",
+    "clearLocalDataMessage": "This will remove all local notes from this device."
   },
   "common": {
     "cancel": "Отмена",

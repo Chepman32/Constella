@@ -8,6 +8,7 @@ import {
   Switch,
   Modal,
   FlatList,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
@@ -20,8 +21,11 @@ interface SettingsScreenProps {
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { theme, themeName, setTheme, autoTheme, setAutoTheme } = useTheme();
   const { t, language, setLanguage, availableLanguages } = useLocalization();
+
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [hapticsEnabled, setHapticsEnabled] = useState(true);
 
   const themes = [
     { key: 'light', name: t('settings.themes.light'), icon: '☀️' },
@@ -31,118 +35,217 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   ];
 
   const currentLanguage = availableLanguages.find(lang => lang.code === language);
-  const currentTheme = themes.find(theme => theme.key === themeName);
+  const currentTheme = themes.find(item => item.key === themeName);
 
-  const settingsItems = [
-    {
-      id: 'theme',
-      title: t('settings.theme'),
-      icon: currentTheme?.icon || '🎨',
-      type: 'action',
-      value: currentTheme?.name,
-      onPress: () => setShowThemeModal(true),
-    },
-    {
-      id: 'autoTheme',
-      title: t('settings.autoTheme'),
-      icon: '🔄',
-      type: 'toggle',
-      value: autoTheme,
-      onToggle: setAutoTheme,
-    },
-    {
-      id: 'language',
-      title: t('settings.language'),
-      icon: '🌐',
-      type: 'action',
-      value: currentLanguage?.nativeName,
-      onPress: () => setShowLanguageModal(true),
-    },
-    {
-      id: 'notifications',
-      title: t('settings.notifications'),
-      icon: '🔔',
-      type: 'toggle',
-      value: true,
-      onToggle: () => {},
-    },
-    {
-      id: 'backup',
-      title: t('settings.backup'),
-      icon: '☁️',
-      type: 'action',
-      onPress: () => {},
-    },
-    {
-      id: 'export',
-      title: t('settings.export'),
-      icon: '📤',
-      type: 'action',
-      onPress: () => {},
-    },
-    {
-      id: 'about',
-      title: t('settings.about'),
-      icon: 'ℹ️',
-      type: 'action',
-      onPress: () => {},
-    },
-  ];
+  const cardDividerStyle = {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.border,
+    marginTop: 8,
+  };
 
-  const renderSettingItem = (item: any) => {
-    if (item.type === 'toggle') {
-      return (
-        <View key={item.id} style={[styles.settingItem, { borderBottomColor: theme.border }]}>
-          <View style={styles.settingLeft}>
-            <Text style={styles.settingIcon}>{item.icon}</Text>
-            <Text style={[styles.settingTitle, { color: theme.text }]}>{item.title}</Text>
-          </View>
-          <Switch
-            value={item.value}
-            onValueChange={item.onToggle}
-            trackColor={{ false: theme.surface, true: theme.primary }}
-            thumbColor={item.value ? '#fff' : theme.textSecondary}
-          />
-        </View>
-      );
-    }
-
-    return (
-      <TouchableOpacity
-        key={item.id}
-        style={[styles.settingItem, { borderBottomColor: theme.border }]}
-        onPress={item.onPress}
-      >
-        <View style={styles.settingLeft}>
-          <Text style={styles.settingIcon}>{item.icon}</Text>
-          <Text style={[styles.settingTitle, { color: theme.text }]}>{item.title}</Text>
-        </View>
-        <View style={styles.settingRight}>
-          {item.value && (
-            <Text style={[styles.settingValue, { color: theme.textSecondary }]}>{item.value}</Text>
-          )}
-          <Text style={[styles.chevron, { color: theme.textSecondary }]}>›</Text>
-        </View>
-      </TouchableOpacity>
+  const handleClearLocalData = () => {
+    Alert.alert(
+      t('settings.clearLocalDataTitle'),
+      t('settings.clearLocalDataMessage'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: () => {
+            // TODO: wire up real data clearing logic
+          },
+        },
+      ]
     );
   };
+
+  const renderThemeOption = ({ item }: { item: (typeof themes)[number] }) => (
+    <TouchableOpacity
+      style={[
+        styles.modalItem,
+        item.key === themeName && { backgroundColor: theme.primary + '15' },
+      ]}
+      onPress={async () => {
+        await setTheme(item.key as any);
+        setShowThemeModal(false);
+      }}
+    >
+      <Text style={styles.modalItemIcon}>{item.icon}</Text>
+      <Text
+        style={[
+          styles.modalItemText,
+          { color: item.key === themeName ? theme.primary : theme.text },
+        ]}
+      >
+        {item.name}
+      </Text>
+      {item.key === themeName && (
+        <Text style={[styles.checkmark, { color: theme.primary }]}>✓</Text>
+      )}
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
         <TouchableOpacity
-          style={styles.backButton}
+          style={styles.headerButton}
           onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
         >
           <Text style={[styles.backIcon, { color: theme.primary }]}>←</Text>
         </TouchableOpacity>
         <Text style={[styles.title, { color: theme.text }]}>{t('settings.title')}</Text>
-        <View style={styles.placeholder} />
+        <TouchableOpacity style={styles.headerButton} activeOpacity={0.7}>
+          <Text style={[styles.sparkleIcon, { color: theme.accent }]}>✦</Text>
+        </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.section, { backgroundColor: theme.surface }]}>
-          {settingsItems.map(renderSettingItem)}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={[styles.card, { backgroundColor: theme.surface }]}
+          accessible
+          accessibilityLabel={t('settings.quickControls')}
+        >
+          <Text style={[styles.cardTitle, { color: theme.text }]}>
+            {t('settings.quickControls')}
+          </Text>
+          <View style={styles.cardBody}>
+            <View style={styles.row}>
+              <Text style={[styles.rowLabel, { color: theme.text }]}>
+                {t('settings.sound')}
+              </Text>
+              <Switch
+                value={soundEnabled}
+                onValueChange={setSoundEnabled}
+                trackColor={{ false: theme.border, true: theme.primary }}
+                thumbColor={soundEnabled ? '#ffffff' : '#f4f3f4'}
+                ios_backgroundColor={theme.border}
+              />
+            </View>
+            <View style={[styles.row, cardDividerStyle]}>
+              <Text style={[styles.rowLabel, { color: theme.text }]}>
+                {t('settings.haptics')}
+              </Text>
+              <Switch
+                value={hapticsEnabled}
+                onValueChange={setHapticsEnabled}
+                trackColor={{ false: theme.border, true: theme.primary }}
+                thumbColor={hapticsEnabled ? '#ffffff' : '#f4f3f4'}
+                ios_backgroundColor={theme.border}
+              />
+            </View>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={[styles.card, styles.singleRowCard, { backgroundColor: theme.surface }]}
+          onPress={() => setShowThemeModal(true)}
+          accessible
+          accessibilityLabel={t('settings.appearance')}
+        >
+          <Text style={[styles.rowLabel, { color: theme.text }]}>
+            {t('settings.appearance')}
+          </Text>
+          <View style={styles.rowRight}>
+            <Text style={[styles.rowValue, { color: theme.textSecondary }]}>
+              {currentTheme?.name}
+            </Text>
+            <Text style={[styles.rowChevron, { color: theme.textSecondary }]}>›</Text>
+          </View>
+        </TouchableOpacity>
+
+        <View
+          style={[
+            styles.proCard,
+            {
+              backgroundColor: theme.accent + '25',
+              borderColor: theme.accent + '35',
+            },
+          ]}
+          accessible
+          accessibilityLabel={t('settings.becomePro.title')}
+        >
+          <View style={styles.proCardContent}>
+            <View style={styles.proTextContainer}>
+              <Text style={[styles.proTitle, { color: theme.text }]}>
+                {t('settings.becomePro.title')}
+              </Text>
+              <Text style={[styles.proSubtitle, { color: theme.text }]}
+                numberOfLines={2}
+              >
+                {t('settings.becomePro.subtitle')}
+              </Text>
+            </View>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={[styles.proButton, { backgroundColor: theme.accent }]}
+            >
+              <Text style={styles.proButtonText}>
+                {t('settings.becomePro.cta')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={[styles.card, styles.singleRowCard, { backgroundColor: theme.surface }]}
+          onPress={() => setShowLanguageModal(true)}
+          accessible
+          accessibilityLabel={t('settings.language')}
+        >
+          <Text style={[styles.rowLabel, { color: theme.text }]}>
+            {t('settings.language')}
+          </Text>
+          <View style={styles.rowRight}>
+            <Text style={[styles.rowValue, { color: theme.textSecondary }]}>
+              {currentLanguage?.nativeName}
+            </Text>
+            <Text style={[styles.rowChevron, { color: theme.textSecondary }]}>›</Text>
+          </View>
+        </TouchableOpacity>
+
+        <View style={[styles.card, { backgroundColor: theme.surface }]}
+          accessible
+          accessibilityLabel={t('settings.dataPrivacy')}
+        >
+          <Text style={[styles.cardTitle, { color: theme.text }]}>
+            {t('settings.dataPrivacy')}
+          </Text>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={[styles.row, styles.rowWithValue]}
+            onPress={() => {}}
+          >
+            <Text style={[styles.rowLabel, { color: theme.text }]}>
+              {t('settings.exportZip')}
+            </Text>
+            <Text style={[styles.rowChevron, { color: theme.textSecondary }]}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={[styles.row, styles.rowWithValue, cardDividerStyle]}
+            onPress={() => {}}
+          >
+            <Text style={[styles.rowLabel, { color: theme.text }]}>
+              {t('settings.import')}
+            </Text>
+            <Text style={[styles.rowChevron, { color: theme.textSecondary }]}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={[styles.row, styles.clearRow, cardDividerStyle]}
+            onPress={handleClearLocalData}
+          >
+            <Text style={[styles.clearText, { color: theme.error }]}>
+              {t('settings.clearLocalData')}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.footer}>
@@ -155,7 +258,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      {/* Theme Selection Modal */}
       <Modal
         visible={showThemeModal}
         transparent
@@ -163,46 +265,53 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         onRequestClose={() => setShowThemeModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>{t('settings.theme')}</Text>
+          <View
+            style={[
+              styles.modalContent,
+              { backgroundColor: theme.surface, borderColor: theme.border },
+            ]}
+          >
+            <Text style={[styles.modalTitle, { color: theme.text }]}>
+              {t('settings.theme')}
+            </Text>
+            <View style={[styles.modalSwitchRow, { borderColor: theme.border }]}
+              accessible
+              accessibilityLabel={t('settings.autoTheme')}
+            >
+              <Text style={[styles.modalSwitchLabel, { color: theme.text }]}>
+                {t('settings.autoTheme')}
+              </Text>
+              <Switch
+                value={autoTheme}
+                onValueChange={setAutoTheme}
+                trackColor={{ false: theme.border, true: theme.primary }}
+                thumbColor={autoTheme ? '#ffffff' : '#f4f3f4'}
+                ios_backgroundColor={theme.border}
+              />
+            </View>
             <FlatList
               data={themes}
-              keyExtractor={(item) => item.key}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.modalItem,
-                    item.key === themeName && { backgroundColor: theme.primary + '15' }
-                  ]}
-                  onPress={async () => {
-                    await setTheme(item.key as any);
-                    setShowThemeModal(false);
-                  }}
-                >
-                  <Text style={styles.modalItemIcon}>{item.icon}</Text>
-                  <Text style={[
-                    styles.modalItemText,
-                    { color: item.key === themeName ? theme.primary : theme.text }
-                  ]}>
-                    {item.name}
-                  </Text>
-                  {item.key === themeName && (
-                    <Text style={[styles.checkmark, { color: theme.primary }]}>✓</Text>
-                  )}
-                </TouchableOpacity>
+              keyExtractor={item => item.key}
+              renderItem={renderThemeOption}
+              contentContainerStyle={styles.modalList}
+              ItemSeparatorComponent={() => (
+                <View style={[styles.modalSeparator, { backgroundColor: theme.border }]} />
               )}
+              showsVerticalScrollIndicator={false}
             />
             <TouchableOpacity
               style={[styles.modalCancelButton, { backgroundColor: theme.border }]}
               onPress={() => setShowThemeModal(false)}
+              activeOpacity={0.8}
             >
-              <Text style={[styles.modalCancelText, { color: theme.text }]}>{t('common.cancel')}</Text>
+              <Text style={[styles.modalCancelText, { color: theme.text }]}>
+                {t('common.cancel')}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* Language Selection Modal */}
       <Modal
         visible={showLanguageModal}
         transparent
@@ -210,26 +319,35 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         onRequestClose={() => setShowLanguageModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>{t('settings.language')}</Text>
+          <View
+            style={[
+              styles.modalContent,
+              { backgroundColor: theme.surface, borderColor: theme.border },
+            ]}
+          >
+            <Text style={[styles.modalTitle, { color: theme.text }]}>
+              {t('settings.language')}
+            </Text>
             <FlatList
               data={availableLanguages}
-              keyExtractor={(item) => item.code}
+              keyExtractor={item => item.code}
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={[
                     styles.modalItem,
-                    item.code === language && { backgroundColor: theme.primary + '15' }
+                    item.code === language && { backgroundColor: theme.primary + '15' },
                   ]}
                   onPress={async () => {
                     await setLanguage(item.code);
                     setShowLanguageModal(false);
                   }}
                 >
-                  <Text style={[
-                    styles.modalItemText,
-                    { color: item.code === language ? theme.primary : theme.text }
-                  ]}>
+                  <Text
+                    style={[
+                      styles.modalItemText,
+                      { color: item.code === language ? theme.primary : theme.text },
+                    ]}
+                  >
                     {item.nativeName}
                   </Text>
                   <Text style={[styles.modalItemSubtext, { color: theme.textSecondary }]}>
@@ -240,12 +358,20 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
                   )}
                 </TouchableOpacity>
               )}
+              ItemSeparatorComponent={() => (
+                <View style={[styles.modalSeparator, { backgroundColor: theme.border }]} />
+              )}
+              contentContainerStyle={styles.modalList}
+              showsVerticalScrollIndicator={false}
             />
             <TouchableOpacity
               style={[styles.modalCancelButton, { backgroundColor: theme.border }]}
               onPress={() => setShowLanguageModal(false)}
+              activeOpacity={0.8}
             >
-              <Text style={[styles.modalCancelText, { color: theme.text }]}>{t('common.cancel')}</Text>
+              <Text style={[styles.modalCancelText, { color: theme.text }]}>
+                {t('common.cancel')}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -262,103 +388,158 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
   },
-  backButton: {
+  headerButton: {
     padding: 8,
+    borderRadius: 12,
   },
   backIcon: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '600',
+  },
+  sparkleIcon: {
+    fontSize: 18,
   },
   title: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  placeholder: {
-    width: 40,
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingBottom: 48,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
+  card: {
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 2,
   },
-  section: {
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: 24,
-  },
-  settingItem: {
+  singleRowCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  settingLeft: {
+  cardBody: {
+    marginTop: 8,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    justifyContent: 'space-between',
+    paddingVertical: 12,
   },
-  settingRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  rowWithValue: {
+    marginTop: 4,
   },
-  settingValue: {
-    fontSize: 14,
-    marginRight: 8,
-  },
-  settingIcon: {
-    fontSize: 20,
-    marginRight: 12,
-  },
-  settingTitle: {
+  rowLabel: {
     fontSize: 16,
     fontWeight: '500',
   },
-  chevron: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  rowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rowValue: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  rowChevron: {
+    fontSize: 18,
+    marginLeft: 8,
+  },
+  proCard: {
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+  },
+  proCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  proTextContainer: {
+    flex: 1,
+    paddingRight: 16,
+  },
+  proTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  proSubtitle: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 4,
+  },
+  proButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 18,
+  },
+  proButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  clearRow: {
+    justifyContent: 'flex-start',
+  },
+  clearText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
   footer: {
     alignItems: 'center',
-    paddingVertical: 24,
+    marginTop: 12,
   },
   footerText: {
-    fontSize: 14,
-    marginBottom: 4,
-    textAlign: 'center',
+    fontSize: 13,
+    marginTop: 4,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 24,
   },
   modalContent: {
-    width: '80%',
-    maxHeight: '70%',
-    borderRadius: 16,
+    width: '100%',
+    maxHeight: '80%',
+    borderRadius: 24,
     borderWidth: 1,
     overflow: 'hidden',
+    paddingBottom: 16,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    padding: 20,
+    fontWeight: '700',
     textAlign: 'center',
+    paddingVertical: 20,
+  },
+  modalList: {
+    paddingHorizontal: 20,
   },
   modalItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
   },
   modalItemIcon: {
     fontSize: 20,
     marginRight: 12,
-    width: 24,
+    width: 28,
     textAlign: 'center',
   },
   modalItemText: {
@@ -367,21 +548,38 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalItemSubtext: {
-    fontSize: 14,
+    fontSize: 13,
     marginLeft: 8,
+  },
+  modalSeparator: {
+    height: StyleSheet.hairlineWidth,
+    marginHorizontal: 16,
   },
   checkmark: {
     fontSize: 16,
     fontWeight: 'bold',
   },
   modalCancelButton: {
-    paddingVertical: 16,
+    marginHorizontal: 24,
+    marginTop: 16,
+    paddingVertical: 14,
+    borderRadius: 16,
     alignItems: 'center',
-    margin: 16,
-    borderRadius: 12,
   },
   modalCancelText: {
     fontSize: 16,
+    fontWeight: '600',
+  },
+  modalSwitchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  modalSwitchLabel: {
+    fontSize: 15,
     fontWeight: '500',
   },
 });

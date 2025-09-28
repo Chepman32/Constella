@@ -41,7 +41,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const cardDividerStyle = {
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: theme.border,
-    marginTop: 8,
+    marginTop: 16,
   };
 
   const handleClearLocalData = () => {

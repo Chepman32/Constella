@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   switchControl: {
-    marginRight: 6,
+    marginRight: 40,
   },
   rowChevron: {
     fontSize: 18,

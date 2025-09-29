@@ -61,7 +61,7 @@ const FolderManagementScreen: React.FC<FolderManagementScreenProps> = ({ navigat
     setFolderName('');
     setFolderDescription('');
     setSelectedColor('#007AFF');
-    setSelectedIcon('📁');
+    setSelectedIcon('folder-outline');
     setShowCreateModal(true);
   };
 
@@ -132,7 +132,7 @@ const FolderManagementScreen: React.FC<FolderManagementScreenProps> = ({ navigat
     setFolderName('');
     setFolderDescription('');
     setSelectedColor('#007AFF');
-    setSelectedIcon('📁');
+    setSelectedIcon('folder-outline');
     setEditingFolder(null);
   };
 

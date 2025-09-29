@@ -13,6 +13,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLocalization } from '../contexts/LocalizationContext';
 import { databaseService } from '../services/DatabaseService';
 import { Folder } from '../types';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
   const { theme, themeName } = useTheme();
@@ -38,25 +39,25 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
     {
       id: 'Notes',
       label: t('navigation.notes'),
-      icon: '📝',
+      icon: 'file-document-outline',
       screen: 'Notes',
     },
     {
       id: 'Favorites',
       label: t('navigation.favorites'),
-      icon: '⭐️',
+      icon: 'star-outline',
       screen: 'Favorites',
     },
     {
       id: 'Canvas',
       label: t('navigation.canvas'),
-      icon: '🗺️',
+      icon: 'map-outline',
       screen: 'Canvas',
     },
     {
       id: 'Settings',
       label: t('navigation.settings'),
-      icon: '⚙️',
+      icon: 'cog-outline',
       screen: 'Settings',
     },
   ];
@@ -111,7 +112,7 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
                 onPress={() => navigateToScreen(item.screen)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.menuIcon}>{item.icon}</Text>
+                <Icon name={item.icon} size={20} style={styles.menuIcon} color={isActive ? theme.primary : theme.text} />
                 <Text
                   style={[
                     styles.menuLabel,
@@ -136,9 +137,7 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
             <Text style={[styles.sectionHeaderText, { color: theme.text }]}>
               {t('folders.title')}
             </Text>
-            <Text style={[styles.expandIcon, { color: theme.textSecondary }]}>
-              {foldersExpanded ? '▼' : '▶'}
-            </Text>
+            <Icon name={foldersExpanded ? 'chevron-down' : 'chevron-right'} size={16} color={theme.textSecondary} />
           </TouchableOpacity>
 
           {foldersExpanded && (
@@ -149,7 +148,7 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
                 onPress={() => navigateToFolder(null, t('folders.allNotes'))}
                 activeOpacity={0.7}
               >
-                <Text style={styles.folderIcon}>📋</Text>
+                <Icon name="clipboard-text-outline" size={16} style={styles.folderIcon} color={theme.text} />
                 <Text style={[styles.folderLabel, { color: theme.text }]}>
                   {t('folders.allNotes')}
                 </Text>
@@ -163,7 +162,7 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
                   onPress={() => navigateToFolder(folder.id, folder.name)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.folderIcon}>{folder.icon || '📁'}</Text>
+                  <Icon name={folder.icon || 'folder-outline'} size={16} style={styles.folderIcon} color={theme.text} />
                   <View style={styles.folderInfo}>
                     <Text style={[styles.folderLabel, { color: theme.text }]}>
                       {folder.name}
@@ -189,7 +188,7 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
                 onPress={() => navigateToScreen('FolderManagement')}
                 activeOpacity={0.7}
               >
-                <Text style={styles.manageIcon}>⚙️</Text>
+                <Icon name="cog-outline" size={16} style={styles.manageIcon} color={theme.accent} />
                 <Text style={[styles.manageLabel, { color: theme.accent }]}>
                   {t('folders.manage')}
                 </Text>
@@ -201,7 +200,7 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
 
       <View style={[styles.footer, { borderTopColor: theme.border }]}>
         <Text style={[styles.version, { color: theme.textSecondary }]}>
-          v1.0.0 • {themeName === 'dark' ? '🌙' : '☀️'}
+          v1.0.0 • <Icon name={themeName === 'dark' ? 'weather-night' : 'weather-sunny'} size={12} color={theme.textSecondary} />
         </Text>
       </View>
     </SafeAreaView>

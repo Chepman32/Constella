@@ -7,6 +7,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLocalization } from '../contexts/LocalizationContext';
 import { databaseService } from '../services/DatabaseService';
@@ -123,7 +124,7 @@ const FolderView: React.FC<FolderViewProps> = ({
               styles.folderIconContainer,
               { backgroundColor: (folder.color || theme.accent) + '40' }
             ]}>
-              <Text style={styles.folderIcon}>{folder.icon || '📁'}</Text>
+              <Icon name={folder.icon || 'folder-outline'} size={20} color={folder.color || theme.accent} />
             </View>
             <View style={styles.folderContent}>
               <Text style={[styles.folderName, { color: theme.text }]}>

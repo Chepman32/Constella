@@ -17,6 +17,7 @@ import Clipboard from '@react-native-clipboard/clipboard';
 import HapticFeedback from 'react-native-haptic-feedback';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -635,7 +636,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
                         },
                       ]}
                     >
-                      <Text style={styles.contextMenuIcon}>{action.icon}</Text>
+                      <Icon name={action.icon} size={18} style={styles.contextMenuIcon} color={action.id === 'delete' ? '#d62d20' : theme.text} />
                       <Text
                         style={[
                           styles.contextMenuActionLabel,

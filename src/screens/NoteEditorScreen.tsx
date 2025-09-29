@@ -31,6 +31,7 @@ import DrawingCanvas from '../components/DrawingCanvas';
 import { RichEditor, RichToolbar, actions } from 'react-native-pell-rich-editor';
 import Clipboard from '@react-native-clipboard/clipboard';
 import HapticFeedback from 'react-native-haptic-feedback';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 interface NoteEditorScreenProps {
   navigation: any;
@@ -61,10 +62,10 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
   const headerOpacity = useSharedValue(1);
 
   const CONTEXT_MENU_ACTIONS = [
-    { id: 'focus', label: t('editor.actions.focusMode'), icon: '👁️', destructive: false },
-    { id: 'copy', label: t('notes.actions.copy'), icon: '📋', destructive: false },
-    { id: 'share', label: t('notes.actions.share'), icon: '📤', destructive: false },
-    { id: 'delete', label: t('notes.actions.delete'), icon: '🗑️', destructive: true },
+    { id: 'focus', label: t('editor.actions.focusMode'), icon: 'eye-outline', destructive: false },
+    { id: 'copy', label: t('notes.actions.copy'), icon: 'content-copy', destructive: false },
+    { id: 'share', label: t('notes.actions.share'), icon: 'share-variant-outline', destructive: false },
+    { id: 'delete', label: t('notes.actions.delete'), icon: 'delete-outline', destructive: true },
   ] as const;
 
   useEffect(() => {
@@ -408,7 +409,7 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
                       action.destructive && { borderColor: theme.border }
                     ]}
                   >
-                    <Text style={styles.contextMenuIcon}>{action.icon}</Text>
+                    <Icon name={action.icon} size={22} style={styles.contextMenuIcon} color={action.destructive ? '#d62d20' : theme.text} />
                     <Text
                       style={[
                         styles.contextMenuActionLabel,

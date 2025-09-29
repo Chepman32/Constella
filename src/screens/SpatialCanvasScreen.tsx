@@ -358,7 +358,7 @@ const SpatialCanvasScreen: React.FC<SpatialCanvasScreenProps> = ({ navigation })
         return {
           ...action,
           label: isPinned ? 'Unpin' : 'Pin',
-          icon: isPinned ? '📍' : '📌',
+          icon: isPinned ? 'pin-off-outline' : 'pin-outline',
         };
       }
       return action;

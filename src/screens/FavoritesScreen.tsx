@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Animated, { Layout, FadeInDown } from 'react-native-reanimated';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLocalization } from '../contexts/LocalizationContext';
 import { databaseService } from '../services/DatabaseService';
@@ -154,7 +155,7 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Text style={[styles.backIcon, { color: theme.primary }]}>←</Text>
+          <Icon name="arrow-left" size={24} color={theme.primary} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: theme.text }]}>{t('favorites.title')}</Text>
         <View style={styles.placeholder} />

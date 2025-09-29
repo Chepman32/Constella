@@ -70,7 +70,7 @@ const FolderPicker: React.FC<FolderPickerProps> = ({
       await databaseService.createFolder({
         name: newFolderName.trim(),
         color: selectedColor,
-        icon: '📁',
+        icon: folderIcons[0],
         created: new Date(),
         lastModified: new Date(),
       });

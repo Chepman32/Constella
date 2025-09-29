@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { Canvas, Path, Skia, useCanvasRef } from '@shopify/react-native-skia';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../contexts/ThemeContext';
 import { Stroke, Point, Drawing } from '../types';
 import { generateId } from '../utils';
@@ -258,7 +259,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                   styles.toolButtonText,
                   { color: currentTool === tool ? '#fff' : theme.text }
                 ]}>
-                  {tool === 'pen' ? '✏️' : tool === 'highlighter' ? '🖍️' : '🧹'}
+                  {tool === 'pen' ? <Icon name="pencil" size={20} color={currentTool === tool ? '#fff' : theme.text} /> : tool === 'highlighter' ? <Icon name="grease-pencil" size={20} color={currentTool === tool ? '#fff' : theme.text} /> : <Icon name="broom" size={20} color={currentTool === tool ? '#fff' : theme.text} />}
                 </Text>
               </TouchableOpacity>
             ))}

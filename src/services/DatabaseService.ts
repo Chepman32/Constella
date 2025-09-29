@@ -1,11 +1,12 @@
 import SQLite from 'react-native-sqlite-storage';
-import { Note, NoteVersion, Tag, Settings, Achievement, Attachment, Drawing } from '../types';
+import { Note, NoteVersion, Tag, Settings, Achievement, Attachment, Drawing, Folder } from '../types';
 
 SQLite.DEBUG(false);
 SQLite.enablePromise(true);
 
 export class DatabaseService {
   private db: SQLite.SQLiteDatabase | null = null;
+  private readonly CURRENT_DB_VERSION = 2;
 
   async init(): Promise<void> {
     try {
@@ -16,6 +17,7 @@ export class DatabaseService {
       });
 
       await this.createTables();
+      await this.runMigrations();
       console.log('Database initialized successfully');
     } catch (error) {
       console.error('Database initialization error:', error);
@@ -27,6 +29,19 @@ export class DatabaseService {
     if (!this.db) throw new Error('Database not initialized');
 
     const queries = [
+      `CREATE TABLE IF NOT EXISTS folders (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        color TEXT,
+        icon TEXT,
+        parentId TEXT,
+        created INTEGER NOT NULL,
+        lastModified INTEGER NOT NULL,
+        noteCount INTEGER DEFAULT 0,
+        FOREIGN KEY (parentId) REFERENCES folders (id) ON DELETE CASCADE
+      )`,
+
       `CREATE TABLE IF NOT EXISTS notes (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
@@ -86,6 +101,7 @@ export class DatabaseService {
         icon TEXT NOT NULL
       )`,
 
+      `CREATE INDEX IF NOT EXISTS idx_folders_parentId ON folders (parentId)`,
       `CREATE INDEX IF NOT EXISTS idx_notes_lastModified ON notes (lastModified)`,
       `CREATE INDEX IF NOT EXISTS idx_note_versions_noteId ON note_versions (noteId)`,
       `CREATE INDEX IF NOT EXISTS idx_attachments_noteId ON attachments (noteId)`,
@@ -96,6 +112,74 @@ export class DatabaseService {
     }
   }
 
+  private async runMigrations(): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    try {
+      // Get current database version
+      const versionResult = await this.db.executeSql('PRAGMA user_version');
+      const currentVersion = versionResult[0].rows.item(0).user_version || 0;
+
+      console.log(`Current database version: ${currentVersion}, Target version: ${this.CURRENT_DB_VERSION}`);
+
+      // Run migrations if needed
+      if (currentVersion < this.CURRENT_DB_VERSION) {
+        await this.performMigrations(currentVersion, this.CURRENT_DB_VERSION);
+
+        // Update database version
+        await this.db.executeSql(`PRAGMA user_version = ${this.CURRENT_DB_VERSION}`);
+        console.log(`Database migrated to version ${this.CURRENT_DB_VERSION}`);
+      }
+    } catch (error) {
+      console.error('Migration error:', error);
+      throw error;
+    }
+  }
+
+  private async hasFolderSupport(): Promise<boolean> {
+    if (!this.db) return false;
+
+    try {
+      const tableInfo = await this.db.executeSql('PRAGMA table_info(notes)');
+      for (let i = 0; i < tableInfo[0].rows.length; i++) {
+        if (tableInfo[0].rows.item(i).name === 'folderId') {
+          return true;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking folder support:', error);
+      return false;
+    }
+  }
+
+  private async performMigrations(fromVersion: number, toVersion: number): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    console.log(`Running migrations from version ${fromVersion} to ${toVersion}`);
+
+    // Migration from version 0 or 1 to version 2 (adding folder support)
+    if (fromVersion < 2) {
+      try {
+        // Check if folderId column already exists
+        const tableInfo = await this.db.executeSql('PRAGMA table_info(notes)');
+        const columns = [];
+        for (let i = 0; i < tableInfo[0].rows.length; i++) {
+          columns.push(tableInfo[0].rows.item(i).name);
+        }
+
+        if (!columns.includes('folderId')) {
+          console.log('Adding folderId column to notes table');
+          await this.db.executeSql('ALTER TABLE notes ADD COLUMN folderId TEXT');
+          await this.db.executeSql('CREATE INDEX IF NOT EXISTS idx_notes_folderId ON notes (folderId)');
+        }
+      } catch (error) {
+        console.error('Error adding folderId column:', error);
+        // Column might already exist, continue
+      }
+    }
+  }
+
   // Notes operations
   async createNote(note: Omit<Note, 'id'>): Promise<string> {
     if (!this.db) throw new Error('Database not initialized');
@@ -103,20 +187,41 @@ export class DatabaseService {
     const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
     const now = Date.now();
 
-    await this.db.executeSql(
-      `INSERT INTO notes (id, title, content, tags, lastModified, created, positionX, positionY)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id,
-        note.title,
-        note.content,
-        JSON.stringify(note.tags),
-        now,
-        now,
-        note.position?.x || null,
-        note.position?.y || null,
-      ]
-    );
+    // Check if folderId column exists before using it
+    const hasFolder = await this.hasFolderSupport();
+
+    if (hasFolder && note.folderId) {
+      await this.db.executeSql(
+        `INSERT INTO notes (id, title, content, tags, lastModified, created, positionX, positionY, folderId)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id,
+          note.title,
+          note.content,
+          JSON.stringify(note.tags),
+          now,
+          now,
+          note.position?.x || null,
+          note.position?.y || null,
+          note.folderId,
+        ]
+      );
+    } else {
+      await this.db.executeSql(
+        `INSERT INTO notes (id, title, content, tags, lastModified, created, positionX, positionY)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id,
+          note.title,
+          note.content,
+          JSON.stringify(note.tags),
+          now,
+          now,
+          note.position?.x || null,
+          note.position?.y || null,
+        ]
+      );
+    }
 
     // Create initial version
     await this.createNoteVersion(id, note.content, 'create');
@@ -147,6 +252,13 @@ export class DatabaseService {
     if (updates.position !== undefined) {
       setClause.push('positionX = ?, positionY = ?');
       values.push(updates.position.x, updates.position.y);
+    }
+    if (updates.folderId !== undefined) {
+      const hasFolder = await this.hasFolderSupport();
+      if (hasFolder) {
+        setClause.push('folderId = ?');
+        values.push(updates.folderId);
+      }
     }
 
     setClause.push('lastModified = ?');
@@ -227,6 +339,7 @@ export class DatabaseService {
       lastModified: new Date(row.lastModified),
       created: new Date(row.created),
       position: row.positionX !== null ? { x: row.positionX, y: row.positionY } : undefined,
+      folderId: row.folderId !== undefined ? row.folderId : undefined,
     };
   }
 
@@ -263,6 +376,197 @@ export class DatabaseService {
     }
 
     return versions;
+  }
+
+  // Folder operations
+  async createFolder(folder: Omit<Folder, 'id' | 'noteCount'>): Promise<string> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    const now = Date.now();
+
+    await this.db.executeSql(
+      `INSERT INTO folders (id, name, description, color, icon, parentId, created, lastModified, noteCount)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        folder.name,
+        folder.description || null,
+        folder.color || null,
+        folder.icon || null,
+        folder.parentId || null,
+        now,
+        now,
+        0,
+      ]
+    );
+
+    return id;
+  }
+
+  async updateFolder(id: string, updates: Partial<Folder>): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const setClause: string[] = [];
+    const values: any[] = [];
+
+    if (updates.name !== undefined) {
+      setClause.push('name = ?');
+      values.push(updates.name);
+    }
+    if (updates.description !== undefined) {
+      setClause.push('description = ?');
+      values.push(updates.description);
+    }
+    if (updates.color !== undefined) {
+      setClause.push('color = ?');
+      values.push(updates.color);
+    }
+    if (updates.icon !== undefined) {
+      setClause.push('icon = ?');
+      values.push(updates.icon);
+    }
+    if (updates.parentId !== undefined) {
+      setClause.push('parentId = ?');
+      values.push(updates.parentId);
+    }
+
+    setClause.push('lastModified = ?');
+    values.push(Date.now());
+    values.push(id);
+
+    await this.db.executeSql(
+      `UPDATE folders SET ${setClause.join(', ')} WHERE id = ?`,
+      values
+    );
+  }
+
+  async deleteFolder(id: string): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    await this.db.executeSql('UPDATE notes SET folderId = NULL WHERE folderId = ?', [id]);
+    await this.db.executeSql('DELETE FROM folders WHERE id = ?', [id]);
+  }
+
+  async getFolder(id: string): Promise<Folder | null> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const result = await this.db.executeSql('SELECT * FROM folders WHERE id = ?', [id]);
+
+    if (result[0].rows.length === 0) return null;
+
+    const row = result[0].rows.item(0);
+    return this.mapRowToFolder(row);
+  }
+
+  async getAllFolders(): Promise<Folder[]> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const result = await this.db.executeSql('SELECT * FROM folders ORDER BY name ASC');
+    const folders: Folder[] = [];
+
+    for (let i = 0; i < result[0].rows.length; i++) {
+      const row = result[0].rows.item(i);
+      folders.push(this.mapRowToFolder(row));
+    }
+
+    await this.updateFolderNoteCounts();
+
+    return folders;
+  }
+
+  async getFoldersByParent(parentId: string | null): Promise<Folder[]> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    let query = 'SELECT * FROM folders WHERE parentId IS NULL ORDER BY name ASC';
+    let params: any[] = [];
+
+    if (parentId) {
+      query = 'SELECT * FROM folders WHERE parentId = ? ORDER BY name ASC';
+      params = [parentId];
+    }
+
+    const result = await this.db.executeSql(query, params);
+    const folders: Folder[] = [];
+
+    for (let i = 0; i < result[0].rows.length; i++) {
+      const row = result[0].rows.item(i);
+      folders.push(this.mapRowToFolder(row));
+    }
+
+    await this.updateFolderNoteCounts();
+
+    return folders;
+  }
+
+  async getNotesByFolder(folderId: string | null, searchTerm?: string): Promise<Note[]> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const hasFolder = await this.hasFolderSupport();
+
+    let query = 'SELECT * FROM notes';
+    let params: any[] = [];
+
+    if (hasFolder) {
+      if (folderId) {
+        query += ' WHERE folderId = ?';
+        params = [folderId];
+      } else {
+        query += ' WHERE folderId IS NULL';
+      }
+    }
+
+    if (searchTerm) {
+      const searchCondition = hasFolder && (folderId || folderId === null) ? ' AND' : ' WHERE';
+      query += searchCondition + ' (title LIKE ? OR content LIKE ?)';
+      params.push(`%${searchTerm}%`, `%${searchTerm}%`);
+    }
+
+    query += ' ORDER BY lastModified DESC';
+
+    const result = await this.db.executeSql(query, params);
+    const notes: Note[] = [];
+
+    for (let i = 0; i < result[0].rows.length; i++) {
+      const row = result[0].rows.item(i);
+      notes.push(this.mapRowToNote(row));
+    }
+
+    return notes;
+  }
+
+  private async updateFolderNoteCounts(): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const folders = await this.db.executeSql('SELECT id FROM folders');
+
+    for (let i = 0; i < folders[0].rows.length; i++) {
+      const folderId = folders[0].rows.item(i).id;
+      const noteCount = await this.db.executeSql(
+        'SELECT COUNT(*) as count FROM notes WHERE folderId = ?',
+        [folderId]
+      );
+      const count = noteCount[0].rows.item(0).count;
+
+      await this.db.executeSql(
+        'UPDATE folders SET noteCount = ? WHERE id = ?',
+        [count, folderId]
+      );
+    }
+  }
+
+  private mapRowToFolder(row: any): Folder {
+    return {
+      id: row.id,
+      name: row.name,
+      description: row.description || undefined,
+      color: row.color || undefined,
+      icon: row.icon || undefined,
+      parentId: row.parentId || undefined,
+      created: new Date(row.created),
+      lastModified: new Date(row.lastModified),
+      noteCount: row.noteCount || 0,
+    };
   }
 
   // Settings

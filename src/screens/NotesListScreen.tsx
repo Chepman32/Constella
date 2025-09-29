@@ -29,8 +29,9 @@ import Animated, {
 import { useTheme } from '../contexts/ThemeContext';
 import { useLocalization } from '../contexts/LocalizationContext';
 import { databaseService } from '../services/DatabaseService';
-import { Note } from '../types';
+import { Note, Folder } from '../types';
 import { formatDate, truncateText, extractTextFromMarkdown } from '../utils';
+import FolderPicker from '../components/FolderPicker';
 
 interface NotesListScreenProps {
   navigation: any;
@@ -51,12 +52,18 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
   const { theme, themeName } = useTheme();
   const { t } = useLocalization();
   const [notes, setNotes] = useState<Note[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [currentFolderName, setCurrentFolderName] = useState<string>(t('folders.allNotes'));
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isPullingToSearch, setIsPullingToSearch] = useState(false);
   const [contextMenuState, setContextMenuState] = useState<ContextMenuState | null>(null);
   const [menuLayout, setMenuLayout] = useState({ width: 0, height: 0 });
+  const [showFolderPicker, setShowFolderPicker] = useState(false);
+  const [showMoveToFolderModal, setShowMoveToFolderModal] = useState(false);
+  const [noteToMove, setNoteToMove] = useState<Note | null>(null);
   const windowDimensions = useWindowDimensions();
 
   const searchOpacity = useSharedValue(0);
@@ -67,6 +74,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
   const CONTEXT_MENU_ACTIONS = [
     { id: 'copy', label: t('notes.actions.copy'), icon: '📋' },
     { id: 'share', label: t('notes.actions.share'), icon: '📤' },
+    { id: 'move', label: t('notes.actions.moveToFolder'), icon: '📁' },
     { id: 'favorite', label: t('notes.actions.favorite'), icon: '⭐️' },
     { id: 'delete', label: t('notes.actions.delete'), icon: '🗑️', destructive: true },
   ] as const;
@@ -74,20 +82,38 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
   const loadNotes = useCallback(async () => {
     try {
       setIsLoading(true);
-      const allNotes = await databaseService.getAllNotes(searchQuery || undefined);
-      setNotes(allNotes);
+      const folderNotes = await databaseService.getNotesByFolder(selectedFolderId, searchQuery || undefined);
+      setNotes(folderNotes);
     } catch (error) {
       console.error('Failed to load notes:', error);
       Alert.alert(t('common.error'), t('errors.loadNotes'));
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, t]);
+  }, [selectedFolderId, searchQuery, t]);
+
+  const loadFolders = useCallback(async () => {
+    try {
+      const allFolders = await databaseService.getAllFolders();
+      setFolders(allFolders);
+    } catch (error) {
+      console.error('Failed to load folders:', error);
+    }
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
+      // Handle navigation params for folder selection
+      const { folderId, folderName } = navigation.getState().routes[navigation.getState().index]?.params || {};
+
+      if (folderId !== undefined) {
+        setSelectedFolderId(folderId);
+        setCurrentFolderName(folderName || t('folders.allNotes'));
+      }
+
       loadNotes();
-    }, [loadNotes])
+      loadFolders();
+    }, [loadNotes, loadFolders, navigation, t])
   );
 
   useEffect(() => {
@@ -143,6 +169,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
         tags: [],
         lastModified: new Date(),
         created: new Date(),
+        folderId: selectedFolderId || undefined,
       });
 
       navigation.navigate('Editor', { noteId });
@@ -202,6 +229,11 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
         }
         break;
 
+      case 'move':
+        setNoteToMove(note);
+        setShowMoveToFolderModal(true);
+        break;
+
       case 'favorite':
         // TODO: Implement favorite functionality
         HapticFeedback.trigger('impactLight');
@@ -231,6 +263,25 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
     const { note } = contextMenuState;
     closeContextMenu();
     await handleMenuAction(note.id, action);
+  };
+
+  const handleFolderSelect = (folderId: string | null, folderName?: string) => {
+    setSelectedFolderId(folderId);
+    setCurrentFolderName(folderName || t('folders.allNotes'));
+  };
+
+  const handleMoveNoteToFolder = async (targetFolderId: string | null) => {
+    if (!noteToMove) return;
+
+    try {
+      await databaseService.updateNote(noteToMove.id, { folderId: targetFolderId || undefined });
+      setShowMoveToFolderModal(false);
+      setNoteToMove(null);
+      loadNotes();
+    } catch (error) {
+      console.error('Failed to move note:', error);
+      Alert.alert(t('common.error'), t('errors.moveNote'));
+    }
   };
 
   const menuPosition = useMemo(() => {
@@ -378,18 +429,22 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
         >
           <Text style={[styles.actionIcon, { color: theme.primary }]}>☰</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, { color: theme.text }]}>{t('notes.title')}</Text>
+        <View style={styles.titleContainer}>
+          <Text style={[styles.title, { color: theme.text }]}>{currentFolderName}</Text>
+          {selectedFolderId && (
+            <TouchableOpacity onPress={() => setShowFolderPicker(true)}>
+              <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+                {t('folders.tapToChange')} ↓
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
         <View style={styles.headerActions}>
+          <TouchableOpacity onPress={() => setShowFolderPicker(true)} style={styles.actionButton}>
+            <Text style={[styles.actionIcon, { color: theme.primary }]}>📁</Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={toggleSearch} style={styles.actionButton}>
             <Text style={[styles.actionIcon, { color: theme.primary }]}>🔍</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => {
-              // TODO: Implement three-dots menu functionality
-            }}
-            style={styles.actionButton}
-          >
-            <Text style={[styles.actionIcon, { color: theme.primary }]}>⋯</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -568,6 +623,28 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
           <Text style={styles.fabIcon}>+</Text>
         </TouchableOpacity>
       </Animated.View>
+
+      {/* Folder Picker Modal */}
+      <FolderPicker
+        visible={showFolderPicker}
+        onClose={() => setShowFolderPicker(false)}
+        onFolderSelect={handleFolderSelect}
+        selectedFolderId={selectedFolderId}
+      />
+
+      {/* Move Note to Folder Modal */}
+      {noteToMove && (
+        <FolderPicker
+          visible={showMoveToFolderModal}
+          onClose={() => {
+            setShowMoveToFolderModal(false);
+            setNoteToMove(null);
+          }}
+          onFolderSelect={(folderId) => handleMoveNoteToFolder(folderId)}
+          selectedFolderId={noteToMove.folderId}
+          allowCreateFolder={false}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -583,9 +660,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
   title: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: 'bold',
+  },
+  subtitle: {
+    fontSize: 12,
+    marginTop: 2,
   },
   headerActions: {
     flexDirection: 'row',

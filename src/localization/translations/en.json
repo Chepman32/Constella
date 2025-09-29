@@ -22,6 +22,7 @@
     "actions": {
       "copy": "Copy",
       "share": "Share",
+      "moveToFolder": "Move to Folder",
       "favorite": "Favorite",
       "delete": "Delete"
     },
@@ -92,11 +93,37 @@
       "focusMode": "Focus Mode"
     }
   },
+  "folders": {
+    "title": "Folders",
+    "allNotes": "All Notes",
+    "allNotesDescription": "Notes not in any folder",
+    "noFolder": "No folder selected",
+    "selectFolder": "Select Folder",
+    "createFolder": "Create Folder",
+    "editFolder": "Edit Folder",
+    "folderName": "Folder Name",
+    "description": "Description",
+    "color": "Color",
+    "icon": "Icon",
+    "manage": "Manage Folders",
+    "createNew": "Create New Folder",
+    "createFirst": "Create Your First Folder",
+    "tapToChange": "Tap to change folder",
+    "note": "note",
+    "notes": "notes",
+    "empty": "No folders yet",
+    "emptyDescription": "Create folders to organize your notes better",
+    "delete": {
+      "title": "Delete Folder",
+      "message": "Are you sure you want to delete the folder \"{folderName}\"? Notes in this folder will be moved to \"All Notes\"."
+    }
+  },
   "common": {
     "cancel": "Cancel",
     "delete": "Delete",
     "remove": "Remove",
     "save": "Save",
+    "create": "Create",
     "edit": "Edit",
     "done": "Done",
     "back": "Back",
@@ -113,6 +140,11 @@
     "deleteNote": "Failed to delete note",
     "copyNote": "Failed to copy note",
     "shareNote": "Failed to share note",
-    "loadFavorites": "Failed to load favorite notes"
+    "moveNote": "Failed to move note",
+    "loadFavorites": "Failed to load favorite notes",
+    "loadFolders": "Failed to load folders",
+    "createFolder": "Failed to create folder",
+    "updateFolder": "Failed to update folder",
+    "deleteFolder": "Failed to delete folder"
   }
 }

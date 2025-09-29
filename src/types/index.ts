@@ -8,6 +8,7 @@ export interface Note {
   attachments?: Attachment[];
   drawings?: Drawing[];
   position?: { x: number; y: number }; // For spatial canvas
+  folderId?: string; // Reference to parent folder
 }
 
 export interface Attachment {
@@ -44,6 +45,18 @@ export interface NoteVersion {
   content: string;
   timestamp: Date;
   changeType: 'create' | 'update' | 'delete';
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+  parentId?: string; // For nested folders
+  created: Date;
+  lastModified: Date;
+  noteCount: number;
 }
 
 export interface Tag {

@@ -28,6 +28,7 @@ import { databaseService } from '../services/DatabaseService';
 import { Note, Drawing } from '../types';
 import { generateId } from '../utils';
 import DrawingCanvas from '../components/DrawingCanvas';
+import { RichEditor, RichToolbar, actions } from 'react-native-pell-rich-editor';
 import Clipboard from '@react-native-clipboard/clipboard';
 import HapticFeedback from 'react-native-haptic-feedback';
 
@@ -48,14 +49,12 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isFocusMode, setIsFocusMode] = useState(false);
-  const [cursorPosition, setCursorPosition] = useState(0);
-  const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [drawings, setDrawings] = useState<Drawing[]>([]);
   const [showContextMenu, setShowContextMenu] = useState(false);
 
   const titleRef = useRef<TextInput>(null);
-  const contentRef = useRef<TextInput>(null);
+  const richEditorRef = useRef<RichEditor>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
 
   const toolbarOpacity = useSharedValue(1);
@@ -102,6 +101,10 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
         setNote(loadedNote);
         setTitle(loadedNote.title);
         setContent(loadedNote.content);
+        // Update rich editor content
+        if (richEditorRef.current) {
+          richEditorRef.current.setContentHTML(loadedNote.content || '');
+        }
       }
     } catch (error) {
       console.error('Failed to load note:', error);
@@ -148,38 +151,7 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
     }
   };
 
-  const insertText = (textToInsert: string, cursorOffset: number = 0) => {
-    if (!contentRef.current) return;
 
-    const newText =
-      content.slice(0, cursorPosition) +
-      textToInsert +
-      content.slice(cursorPosition);
-
-    setContent(newText);
-
-    // Set cursor position after inserted text and refocus
-    setTimeout(() => {
-      if (contentRef.current) {
-        const newCursorPos = cursorPosition + textToInsert.length + cursorOffset;
-        contentRef.current.focus();
-        contentRef.current.setNativeProps({
-          selection: { start: newCursorPos, end: newCursorPos }
-        });
-        setCursorPosition(newCursorPos);
-      }
-    }, 10);
-  };
-
-  const formatSelection = (prefix: string, suffix: string = '') => {
-    // Formatting functionality disabled
-    return;
-  };
-
-  const insertMarkdownElement = (element: string) => {
-    // All formatting functionality disabled
-    return;
-  };
 
   const handleDrawingComplete = (drawing: Drawing) => {
     setDrawings((prev) => [...prev, drawing]);
@@ -317,74 +289,79 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
             multiline
           />
 
-          <TextInput
-            ref={contentRef}
-            style={[styles.contentInput, { color: theme.text }]}
-            placeholder="Start writing..."
-            placeholderTextColor={theme.textSecondary}
-            value={content}
-            onChangeText={setContent}
-            onSelectionChange={(e) => {
-              const { start, end } = e.nativeEvent.selection;
-              setCursorPosition(start);
-              setSelection({ start, end });
+          <RichEditor
+            ref={richEditorRef}
+            style={[styles.richEditor, { backgroundColor: theme.background }]}
+            containerStyle={styles.richEditorContainer}
+            editorStyle={{
+              backgroundColor: theme.background,
+              color: theme.text,
+              contentCSSText: `
+                body {
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                  font-size: 16px;
+                  line-height: 1.5;
+                  color: ${theme.text};
+                  background-color: ${theme.background};
+                  margin: 0;
+                  padding: 12px;
+                }
+                * { box-sizing: border-box; }
+                h1, h2, h3, h4, h5, h6 { margin: 16px 0 8px 0; }
+                p { margin: 8px 0; }
+                ul, ol { margin: 8px 0; padding-left: 24px; }
+                blockquote {
+                  margin: 8px 0;
+                  padding: 8px 16px;
+                  border-left: 3px solid ${theme.accent};
+                  font-style: italic;
+                  background-color: ${theme.surface};
+                }
+              `
             }}
-            multiline
-            scrollEnabled={false}
-            textAlignVertical="top"
+            initialContentHTML={content}
+            placeholder="Start writing..."
+            onChange={(html: string) => setContent(html)}
+            onPaste={() => {
+              // Handle paste events if needed
+            }}
           />
         </ScrollView>
 
-        <Animated.View style={[styles.toolbar, toolbarAnimatedStyle, { backgroundColor: theme.surface }]}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.toolbarContent}
-            keyboardShouldPersistTaps="always"
-          >
-            <ToolbarButton
-              icon="B"
-              onPress={() => insertMarkdownElement('bold')}
-              theme={theme}
-              style={styles.boldButton}
-            />
-            <ToolbarButton
-              icon="I"
-              onPress={() => insertMarkdownElement('italic')}
-              theme={theme}
-              style={styles.italicButton}
-            />
-            <ToolbarButton
-              icon="H"
-              onPress={() => insertMarkdownElement('heading')}
-              theme={theme}
-            />
-            <ToolbarButton
-              icon="•"
-              onPress={() => insertMarkdownElement('bullet')}
-              theme={theme}
-            />
-            <ToolbarButton
-              icon="1."
-              onPress={() => insertMarkdownElement('number')}
-              theme={theme}
-            />
-            <ToolbarButton
-              icon="☐"
-              onPress={() => insertMarkdownElement('checkbox')}
-              theme={theme}
-            />
-            <ToolbarButton
-              icon="❝"
-              onPress={() => insertMarkdownElement('quote')}
-              theme={theme}
-            />
-            <ToolbarButton
-              icon="✏️"
-              onPress={() => insertMarkdownElement('drawing')}
-              theme={theme}
-            />
-          </ScrollView>
+        <Animated.View style={[styles.toolbar, toolbarAnimatedStyle]}>
+          <RichToolbar
+            editor={richEditorRef}
+            style={[styles.richToolbar, { backgroundColor: theme.surface }]}
+            iconTint={theme.text}
+            selectedIconTint={theme.primary}
+            selectedButtonStyle={{ backgroundColor: theme.primary + '20' }}
+            actions={[
+              actions.setBold,
+              actions.setItalic,
+              actions.heading1,
+              actions.heading2,
+              actions.heading3,
+              actions.insertBulletsList,
+              actions.insertOrderedList,
+              actions.blockquote,
+              'insertDrawing'
+            ]}
+            iconMap={{
+              [actions.setBold]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>B</Text>,
+              [actions.setItalic]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor, fontStyle: 'italic' }]}>I</Text>,
+              [actions.heading1]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>H1</Text>,
+              [actions.heading2]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>H2</Text>,
+              [actions.heading3]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>H3</Text>,
+              [actions.insertBulletsList]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>•</Text>,
+              [actions.insertOrderedList]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>1.</Text>,
+              [actions.blockquote]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>❝</Text>,
+              insertDrawing: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>✏️</Text>,
+            }}
+            onPressAddImage={() => {
+              // Handle image insertion if needed
+            }}
+            insertDrawing={() => setIsDrawingMode(true)}
+          />
         </Animated.View>
       </KeyboardAvoidingView>
       {isDrawingMode && (
@@ -449,48 +426,6 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
   );
 };
 
-interface ToolbarButtonProps {
-  icon: string;
-  onPress: () => void;
-  theme: any;
-  style?: any;
-}
-
-const ToolbarButton: React.FC<ToolbarButtonProps> = ({ icon, onPress, theme, style }) => {
-  const scale = useSharedValue(1);
-
-  const handlePress = () => {
-    scale.value = withSpring(0.8, { duration: 100 });
-    setTimeout(() => {
-      scale.value = withSpring(1, { duration: 100 });
-    }, 100);
-
-    // Prevent keyboard from dismissing by not calling onPress immediately
-    setTimeout(() => {
-      onPress();
-    }, 0);
-  };
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  return (
-    <Animated.View style={animatedStyle}>
-      <TouchableOpacity
-        style={[
-          styles.toolbarButton,
-          { backgroundColor: theme.background, borderColor: theme.border },
-          style,
-        ]}
-        onPress={handlePress}
-        activeOpacity={0.7}
-      >
-        <Text style={[styles.toolbarButtonText, { color: theme.text }]}>{icon}</Text>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-};
 
 const styles = StyleSheet.create({
   container: {
@@ -541,38 +476,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     marginBottom: 20,
   },
-  contentInput: {
-    fontSize: 16,
-    lineHeight: 24,
-    minHeight: height * 0.6,
-    textAlignVertical: 'top',
-  },
   toolbar: {
     paddingVertical: 12,
     borderTopWidth: 1,
-  },
-  toolbarContent: {
-    paddingHorizontal: 20,
-    alignItems: 'center',
-  },
-  toolbarButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-    minWidth: 40,
-    alignItems: 'center',
-  },
-  toolbarButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  boldButton: {
-    fontWeight: 'bold',
-  },
-  italicButton: {
-    fontStyle: 'italic',
   },
   contextMenuWrapper: {
     flex: 1,
@@ -621,6 +527,23 @@ const styles = StyleSheet.create({
   contextMenuActionLabel: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  richEditor: {
+    flex: 1,
+    minHeight: height * 0.6,
+  },
+  richEditorContainer: {
+    flex: 1,
+  },
+  richToolbar: {
+    borderTopWidth: 1,
+    paddingVertical: 8,
+  },
+  toolbarIcon: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    minWidth: 24,
   },
 });
 

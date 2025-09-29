@@ -1,7 +1,7 @@
 import SQLite from 'react-native-sqlite-storage';
 import { Note, NoteVersion, Tag, Settings, Achievement, Attachment, Drawing } from '../types';
 
-SQLite.DEBUG(true);
+SQLite.DEBUG(false);
 SQLite.enablePromise(true);
 
 export class DatabaseService {

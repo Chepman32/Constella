@@ -62,12 +62,27 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
   ];
 
   const navigateToScreen = (screenName: string, params?: any) => {
-    navigation.navigate(screenName, params);
+    if (screenName === 'Notes') {
+      // Navigate to MainStack for Notes screen, explicitly showing All Notes
+      navigation.navigate('MainStack', {
+        screen: 'Notes',
+        params: {
+          folderId: null,
+          folderName: t('folders.allNotes'),
+          ...params
+        }
+      });
+    } else {
+      navigation.navigate(screenName, params);
+    }
     navigation.closeDrawer();
   };
 
   const navigateToFolder = (folderId: string | null, folderName: string) => {
-    navigation.navigate('Notes', { folderId, folderName });
+    navigation.navigate('MainStack', {
+      screen: 'Notes',
+      params: { folderId, folderName }
+    });
     navigation.closeDrawer();
   };
 

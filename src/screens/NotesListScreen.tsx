@@ -35,6 +35,7 @@ import FolderPicker from '../components/FolderPicker';
 
 interface NotesListScreenProps {
   navigation: any;
+  route: any;
 }
 
 type ContextMenuState = {
@@ -48,7 +49,7 @@ type ContextMenuState = {
 // We'll define this inside the component to access translations
 
 
-const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
+const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) => {
   const { theme, themeName } = useTheme();
   const { t } = useLocalization();
   const [notes, setNotes] = useState<Note[]>([]);
@@ -104,7 +105,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
   useFocusEffect(
     useCallback(() => {
       // Handle navigation params for folder selection
-      const { folderId, folderName } = navigation.getState().routes[navigation.getState().index]?.params || {};
+      const { folderId, folderName } = route.params || {};
 
       if (folderId !== undefined) {
         setSelectedFolderId(folderId);
@@ -113,7 +114,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
 
       loadNotes();
       loadFolders();
-    }, [loadNotes, loadFolders, navigation, t])
+    }, [loadNotes, loadFolders, route.params, t])
   );
 
   useEffect(() => {

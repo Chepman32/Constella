@@ -121,8 +121,16 @@ const FolderPicker: React.FC<FolderPickerProps> = ({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={[styles.modalContent, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+      <TouchableOpacity
+        style={styles.modalOverlay}
+        activeOpacity={1}
+        onPress={onClose}
+      >
+        <TouchableOpacity
+          style={[styles.modalContent, { backgroundColor: theme.surface, borderColor: theme.border }]}
+          activeOpacity={1}
+          onPress={(e) => e.stopPropagation()}
+        >
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: theme.text }]}>
               {t('folders.selectFolder')}
@@ -178,8 +186,8 @@ const FolderPicker: React.FC<FolderPickerProps> = ({
               <Text style={styles.createButtonText}>+ {t('folders.createNew')}</Text>
             </TouchableOpacity>
           )}
-        </View>
-      </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
 
       {/* Create Folder Dialog */}
       <Modal
@@ -188,8 +196,16 @@ const FolderPicker: React.FC<FolderPickerProps> = ({
         animationType="fade"
         onRequestClose={() => setShowCreateDialog(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.createFolderModal, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowCreateDialog(false)}
+        >
+          <TouchableOpacity
+            style={[styles.createFolderModal, { backgroundColor: theme.surface, borderColor: theme.border }]}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
             <Text style={[styles.createFolderTitle, { color: theme.text }]}>
               {t('folders.createFolder')}
             </Text>
@@ -256,8 +272,8 @@ const FolderPicker: React.FC<FolderPickerProps> = ({
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </Modal>
   );

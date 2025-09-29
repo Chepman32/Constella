@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, StyleSheet, Dimensions, TouchableOpacity, Text } from 'react-native';
-import { Canvas, Path, Skia, useTouchHandler, useCanvasRef } from '@shopify/react-native-skia';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
+import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { Canvas, Path, Skia, useCanvasRef } from '@shopify/react-native-skia';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useTheme } from '../contexts/ThemeContext';
 import { Stroke, Point, Drawing } from '../types';
 import { generateId } from '../utils';
@@ -11,8 +12,6 @@ interface DrawingCanvasProps {
   onClose: () => void;
   existingDrawing?: Drawing;
 }
-
-const { width, height } = Dimensions.get('window');
 
 type DrawingTool = 'pen' | 'highlighter' | 'eraser';
 
@@ -67,20 +66,17 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     });
   }, [currentColor, currentTool, currentWidth]);
 
-  const touchHandler = useTouchHandler(
-    {
-      onStart: (touchInfo) => {
-        runOnJS(handleTouchStart)(touchInfo.x, touchInfo.y, touchInfo.force);
-      },
-      onActive: (touchInfo) => {
-        runOnJS(handleTouchActive)(touchInfo.x, touchInfo.y, touchInfo.force);
-      },
-      onEnd: () => {
-        runOnJS(handleTouchEnd)();
-      },
-    },
-    [handleTouchStart, handleTouchActive, handleTouchEnd]
-  );
+  const drawingGesture = Gesture.Pan()
+    .runOnJS(true)
+    .onBegin((event) => {
+      handleTouchStart(event.x, event.y);
+    })
+    .onUpdate((event) => {
+      handleTouchActive(event.x, event.y);
+    })
+    .onEnd(() => {
+      handleTouchEnd();
+    });
 
   const paths = useMemo(() => {
     const allStrokes = [...strokes];
@@ -218,11 +214,11 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         </TouchableOpacity>
       </View>
 
-      <Canvas
-        ref={canvasRef}
-        style={styles.canvas}
-        onTouch={touchHandler}
-      >
+      <GestureDetector gesture={drawingGesture}>
+        <Canvas
+          ref={canvasRef}
+          style={styles.canvas}
+        >
         {paths.map((pathData) => {
           if (!pathData) return null;
 
@@ -239,7 +235,8 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             />
           );
         })}
-      </Canvas>
+        </Canvas>
+      </GestureDetector>
 
       <Animated.View style={[styles.toolbar, toolbarAnimatedStyle, { backgroundColor: theme.surface }]}>
         <View style={styles.toolSection}>

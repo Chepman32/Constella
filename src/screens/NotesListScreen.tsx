@@ -337,6 +337,30 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
     transform: [{ translateY: pullToSearchTranslateY.value }],
   }));
 
+  const combinedData = useMemo(() => {
+    if (selectedFolderId === null) {
+      return [...folders, ...notes];
+    }
+    return notes;
+  }, [notes, folders, selectedFolderId]);
+
+  const renderFolderItem = ({ item }: { item: Folder }) => (
+    <Pressable
+      onPress={() => handleFolderSelect(item.id, item.name)}
+      style={({ pressed }) => [
+        styles.folderCard,
+        {
+          backgroundColor: theme.surface,
+          borderColor: theme.border,
+          opacity: pressed ? 0.9 : 1,
+        },
+      ]}
+    >
+      <Text style={[styles.folderIcon, { color: theme.primary }]}>📁</Text>
+      <Text style={[styles.folderName, { color: theme.text }]}>{item.name}</Text>
+    </Pressable>
+  );
+
   const renderNoteItem = ({ item, index }: { item: Note; index: number }) => {
     const preview = extractTextFromMarkdown(item.content);
 
@@ -402,6 +426,13 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
     );
   };
 
+  const renderItem = ({ item, index }: { item: Note | Folder; index: number }) => {
+    if ('content' in item) {
+      return renderNoteItem({ item, index });
+    }
+    return renderFolderItem({ item });
+  };
+
   const selectedNotePreview = useMemo(() => {
     if (!contextMenuState) {
       return '';
@@ -424,12 +455,21 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.openDrawer()}
-          style={styles.actionButton}
-        >
-          <Text style={[styles.actionIcon, { color: theme.primary }]}>☰</Text>
-        </TouchableOpacity>
+        {selectedFolderId !== null ? (
+          <TouchableOpacity
+            onPress={() => handleFolderSelect(null)}
+            style={styles.actionButton}
+          >
+            <Text style={[styles.actionIcon, { color: theme.primary }]}>‹</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={() => navigation.openDrawer()}
+            style={styles.actionButton}
+          >
+            <Text style={[styles.actionIcon, { color: theme.primary }]}>☰</Text>
+          </TouchableOpacity>
+        )}
         <View style={styles.titleContainer}>
           <Text style={[styles.title, { color: theme.text }]}>{currentFolderName}</Text>
           {selectedFolderId && (
@@ -480,12 +520,12 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
         </Animated.View>
 
         <FlatList
-          data={notes}
-          renderItem={renderNoteItem}
+          data={combinedData}
+          renderItem={renderItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={[
             styles.listContainer,
-            notes.length === 0 && styles.emptyListContainer,
+            combinedData.length === 0 && styles.emptyListContainer,
           ]}
           ListEmptyComponent={!isLoading ? EmptyState : null}
           showsVerticalScrollIndicator={false}
@@ -737,6 +777,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  folderCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  folderIcon: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  folderName: {
+    fontSize: 16,
+    fontWeight: '500',
   },
   noteHeader: {
     flexDirection: 'row',

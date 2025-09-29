@@ -102,19 +102,23 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
     }
   }, []);
 
+  const handleFolderSelect = useCallback((folderId: string | null, folderName?: string) => {
+    setSelectedFolderId(folderId);
+    setCurrentFolderName(folderName || t('folders.allNotes'));
+  }, [t]);
+
+  useEffect(() => {
+    loadNotes();
+    loadFolders();
+  }, [loadNotes, loadFolders]);
+
   useFocusEffect(
     useCallback(() => {
-      // Handle navigation params for folder selection
-      const { folderId, folderName } = route.params || {};
-
-      if (folderId !== undefined) {
-        setSelectedFolderId(folderId);
-        setCurrentFolderName(folderName || t('folders.allNotes'));
+      if (route.params?.folderId !== undefined) {
+        setSelectedFolderId(route.params.folderId);
+        setCurrentFolderName(route.params.folderName || t('folders.allNotes'));
       }
-
-      loadNotes();
-      loadFolders();
-    }, [loadNotes, loadFolders, route.params, t])
+    }, [route.params?.folderId, route.params?.folderName, t])
   );
 
   useEffect(() => {
@@ -266,10 +270,38 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
     await handleMenuAction(note.id, action);
   };
 
-  const handleFolderSelect = (folderId: string | null, folderName?: string) => {
-    setSelectedFolderId(folderId);
-    setCurrentFolderName(folderName || t('folders.allNotes'));
-  };
+  useEffect(() => {
+    navigation.setOptions({
+      title: currentFolderName,
+      headerRight: () => (
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={() => setShowFolderPicker(true)} style={styles.actionButton}>
+            <Text style={[styles.actionIcon, { color: theme.primary }]}>📁</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={toggleSearch} style={styles.actionButton}>
+            <Text style={[styles.actionIcon, { color: theme.primary }]}>🔍</Text>
+          </TouchableOpacity>
+        </View>
+      ),
+      headerLeft: selectedFolderId === null ? () => (
+        <TouchableOpacity
+          onPress={() => navigation.openDrawer()}
+          style={styles.actionButton}
+        >
+          <Text style={[styles.actionIcon, { color: theme.primary }]}>☰</Text>
+        </TouchableOpacity>
+      ) : () => (
+        <TouchableOpacity
+          onPress={() => handleFolderSelect(null)}
+          style={styles.backButton}
+        >
+          <Text style={[styles.backIcon, { color: theme.primary }]}>←</Text>
+          <Text style={[styles.backLabel, { color: theme.primary }]}>All Notes</Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, currentFolderName, theme, toggleSearch, selectedFolderId]);
+
 
   const handleMoveNoteToFolder = async (targetFolderId: string | null) => {
     if (!noteToMove) return;
@@ -453,42 +485,8 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-        {selectedFolderId !== null ? (
-          <TouchableOpacity
-            onPress={() => handleFolderSelect(null)}
-            style={styles.actionButton}
-          >
-            <Text style={[styles.actionIcon, { color: theme.primary }]}>‹</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            onPress={() => navigation.openDrawer()}
-            style={styles.actionButton}
-          >
-            <Text style={[styles.actionIcon, { color: theme.primary }]}>☰</Text>
-          </TouchableOpacity>
-        )}
-        <View style={styles.titleContainer}>
-          <Text style={[styles.title, { color: theme.text }]}>{currentFolderName}</Text>
-          {selectedFolderId && (
-            <TouchableOpacity onPress={() => setShowFolderPicker(true)}>
-              <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-                {t('folders.tapToChange')} ↓
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => setShowFolderPicker(true)} style={styles.actionButton}>
-            <Text style={[styles.actionIcon, { color: theme.primary }]}>📁</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={toggleSearch} style={styles.actionButton}>
-            <Text style={[styles.actionIcon, { color: theme.primary }]}>🔍</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      
 
       <Animated.View
         style={[styles.searchContainer, searchAnimatedStyle]}
@@ -686,32 +684,13 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
           allowCreateFolder={false}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  titleContainer: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    fontSize: 12,
-    marginTop: 2,
   },
   headerActions: {
     flexDirection: 'row',
@@ -722,6 +701,19 @@ const styles = StyleSheet.create({
   },
   actionIcon: {
     fontSize: 20,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 8,
+  },
+  backIcon: {
+    fontSize: 18,
+    marginRight: 4,
+  },
+  backLabel: {
+    fontSize: 17,
+    fontWeight: '400',
   },
   searchContainer: {
     paddingHorizontal: 20,

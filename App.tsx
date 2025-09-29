@@ -5,8 +5,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { ThemeProvider } from './src/contexts/ThemeContext';
-import { LocalizationProvider } from './src/contexts/LocalizationContext';
+import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
+import { LocalizationProvider, useLocalization } from './src/contexts/LocalizationContext';
 import { databaseService } from './src/services/DatabaseService';
 import SplashScreen from './src/screens/SplashScreen';
 import NotesListScreen from './src/screens/NotesListScreen';
@@ -48,17 +48,36 @@ const App: React.FC = () => {
 
   const containerStyle = { flex: 1 };
 
-  const MainStackNavigator = () => (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-        gestureEnabled: true,
-      }}
-    >
-      <Stack.Screen name="Notes" component={NotesListScreen} />
-      <Stack.Screen name="Editor" component={NoteEditorScreen} />
-    </Stack.Navigator>
-  );
+  const MainStackNavigator = () => {
+    const { theme } = useTheme();
+    const { t } = useLocalization();
+    return (
+      <Stack.Navigator
+        screenOptions={{
+          gestureEnabled: true,
+          headerStyle: {
+            backgroundColor: theme.background,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0,
+          },
+          headerTintColor: theme.primary,
+          headerTitleStyle: {
+            color: theme.text,
+          },
+        }}
+      >
+        <Stack.Screen
+          name="Notes"
+          component={NotesListScreen}
+          options={({ route }) => ({
+            title: route.params?.folderName || t('folders.allNotes'),
+          })}
+        />
+        <Stack.Screen name="Editor" component={NoteEditorScreen} />
+      </Stack.Navigator>
+    );
+  };
 
   return (
     <GestureHandlerRootView style={containerStyle}>

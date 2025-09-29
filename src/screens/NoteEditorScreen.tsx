@@ -94,6 +94,27 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
     };
   }, [title, content, noteId]);
 
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => setShowContextMenu(true)}
+          style={styles.actionButton}
+        >
+          <Text style={[styles.actionIcon, { color: theme.primary }]}>⋯</Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, theme]);
+
+  useEffect(
+    () =>
+      navigation.addListener('beforeRemove', (e) => {
+        saveNote();
+      }),
+    [navigation, saveNote]
+  );
+
   const loadNote = async (id: string) => {
     try {
       const loadedNote = await databaseService.getNote(id);
@@ -114,7 +135,7 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
     }
   };
 
-  const saveNote = async () => {
+  const saveNote = useCallback(async () => {
     try {
       if (noteId) {
         await databaseService.updateNote(noteId, {
@@ -135,7 +156,7 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
     } catch (error) {
       console.error('Failed to save note:', error);
     }
-  };
+  }, [noteId, title, content, navigation]);
 
   const toggleFocusMode = () => {
     setIsFocusMode(!isFocusMode);
@@ -165,12 +186,7 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
     setIsDrawingMode(false);
   };
 
-  const handleBack = async () => {
-    if (title || content) {
-      await saveNote();
-    }
-    navigation.goBack();
-  };
+  
 
   const handleContextMenuAction = async (actionId: string) => {
     setShowContextMenu(false);
@@ -255,25 +271,12 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoid}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <Animated.View style={[styles.header, headerAnimatedStyle]}>
-          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Text style={[styles.backIcon, { color: theme.primary }]}>←</Text>
-          </TouchableOpacity>
-
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              onPress={() => setShowContextMenu(true)}
-              style={styles.actionButton}
-            >
-              <Text style={[styles.actionIcon, { color: theme.primary }]}>⋯</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
+        
 
         <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
           <TextInput
@@ -422,7 +425,7 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -442,19 +445,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 18,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  backButton: {
-    padding: 8,
-  },
-  backIcon: {
-    fontSize: 24,
-  },
+  
   headerActions: {
     flexDirection: 'row',
   },

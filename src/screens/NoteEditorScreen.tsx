@@ -62,9 +62,9 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
   const headerOpacity = useSharedValue(1);
 
   const CONTEXT_MENU_ACTIONS = [
-    { id: 'focus', label: t('editor.actions.focusMode'), icon: '👁️' },
-    { id: 'copy', label: t('notes.actions.copy'), icon: '📋' },
-    { id: 'share', label: t('notes.actions.share'), icon: '📤' },
+    { id: 'focus', label: t('editor.actions.focusMode'), icon: '👁️', destructive: false },
+    { id: 'copy', label: t('notes.actions.copy'), icon: '📋', destructive: false },
+    { id: 'share', label: t('notes.actions.share'), icon: '📤', destructive: false },
     { id: 'delete', label: t('notes.actions.delete'), icon: '🗑️', destructive: true },
   ] as const;
 
@@ -158,10 +158,11 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
 
     setContent(newText);
 
-    // Set cursor position after inserted text
+    // Set cursor position after inserted text and refocus
     setTimeout(() => {
       if (contentRef.current) {
         const newCursorPos = cursorPosition + textToInsert.length + cursorOffset;
+        contentRef.current.focus();
         contentRef.current.setNativeProps({
           selection: { start: newCursorPos, end: newCursorPos }
         });
@@ -171,63 +172,13 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
   };
 
   const formatSelection = (prefix: string, suffix: string = '') => {
-    if (!contentRef.current) return;
-
-    // Use the current selection, or cursor position if no selection
-    const start = selection.start;
-    const end = selection.end;
-    const selectedText = content.slice(start, end);
-    const formattedText = prefix + selectedText + suffix;
-
-    const newText =
-      content.slice(0, start) +
-      formattedText +
-      content.slice(end);
-
-    setContent(newText);
-
-    // Set cursor position between the formatting markers if no text was selected
-    setTimeout(() => {
-      if (contentRef.current) {
-        const newCursorPos = selectedText.length === 0
-          ? start + prefix.length
-          : start + formattedText.length;
-        contentRef.current.setNativeProps({
-          selection: { start: newCursorPos, end: newCursorPos }
-        });
-        setCursorPosition(newCursorPos);
-        setSelection({ start: newCursorPos, end: newCursorPos });
-      }
-    }, 10);
+    // Formatting functionality disabled
+    return;
   };
 
   const insertMarkdownElement = (element: string) => {
-    switch (element) {
-      case 'bold':
-        formatSelection('**', '**');
-        break;
-      case 'italic':
-        formatSelection('*', '*');
-        break;
-      case 'heading':
-        insertText('\n# ', 0);
-        break;
-      case 'bullet':
-        insertText('\n- ', 0);
-        break;
-      case 'number':
-        insertText('\n1. ', 0);
-        break;
-      case 'checkbox':
-        insertText('\n- [ ] ', 0);
-        break;
-      case 'quote':
-        insertText('\n> ', 0);
-        break;
-      case 'drawing':
-        setIsDrawingMode(true);
-        break;
-    }
+    // All formatting functionality disabled
+    return;
   };
 
   const handleDrawingComplete = (drawing: Drawing) => {
@@ -364,8 +315,6 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
             value={title}
             onChangeText={setTitle}
             multiline
-            fontSize={24}
-            fontWeight="bold"
           />
 
           <TextInput
@@ -387,7 +336,12 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
         </ScrollView>
 
         <Animated.View style={[styles.toolbar, toolbarAnimatedStyle, { backgroundColor: theme.surface }]}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.toolbarContent}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.toolbarContent}
+            keyboardShouldPersistTaps="always"
+          >
             <ToolbarButton
               icon="B"
               onPress={() => insertMarkdownElement('bold')}
@@ -510,7 +464,11 @@ const ToolbarButton: React.FC<ToolbarButtonProps> = ({ icon, onPress, theme, sty
     setTimeout(() => {
       scale.value = withSpring(1, { duration: 100 });
     }, 100);
-    onPress();
+
+    // Prevent keyboard from dismissing by not calling onPress immediately
+    setTimeout(() => {
+      onPress();
+    }, 0);
   };
 
   const animatedStyle = useAnimatedStyle(() => ({

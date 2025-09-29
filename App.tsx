@@ -14,6 +14,7 @@ import NoteEditorScreen from './src/screens/NoteEditorScreen';
 import SpatialCanvasScreen from './src/screens/SpatialCanvasScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import FavoritesScreen from './src/screens/FavoritesScreen';
+import FolderManagementScreen from './src/screens/FolderManagementScreen';
 import CustomDrawerContent from './src/components/CustomDrawerContent';
 
 const Stack = createStackNavigator();
@@ -77,6 +78,7 @@ const App: React.FC = () => {
                 <Drawer.Screen name="MainStack" component={MainStackNavigator} />
                 <Drawer.Screen name="Favorites" component={FavoritesScreen} />
                 <Drawer.Screen name="Canvas" component={SpatialCanvasScreen} />
+                <Drawer.Screen name="FolderManagement" component={FolderManagementScreen} />
                 <Drawer.Screen name="Settings" component={SettingsScreen} />
               </Drawer.Navigator>
             </NavigationContainer>

@@ -25,6 +25,7 @@ export const truncateText = (text: string, maxLength: number): string => {
 export const extractTextFromMarkdown = (markdown: string): string => {
   // Simple markdown to text conversion for previews
   return markdown
+    .replace(/<[^>]*>/g, '')
     .replace(/#{1,6}\s+/g, '')
     .replace(/\*\*(.*?)\*\*/g, '$1')
     .replace(/\*(.*?)\*/g, '$1')

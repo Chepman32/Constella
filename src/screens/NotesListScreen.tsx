@@ -54,12 +54,15 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPullingToSearch, setIsPullingToSearch] = useState(false);
   const [contextMenuState, setContextMenuState] = useState<ContextMenuState | null>(null);
   const [menuLayout, setMenuLayout] = useState({ width: 0, height: 0 });
   const windowDimensions = useWindowDimensions();
 
   const searchOpacity = useSharedValue(0);
   const fabScale = useSharedValue(1);
+  const pullToSearchOpacity = useSharedValue(0);
+  const pullToSearchTranslateY = useSharedValue(-50);
 
   const CONTEXT_MENU_ACTIONS = [
     { id: 'copy', label: t('notes.actions.copy'), icon: '📋' },
@@ -101,6 +104,29 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
     searchOpacity.value = withTiming(newSearchActive ? 1 : 0, { duration: 300 });
     if (isSearchActive) {
       setSearchQuery('');
+    }
+  };
+
+  const handleScrollPullDown = (event: any) => {
+    const { contentOffset } = event.nativeEvent;
+    if (contentOffset.y < -50 && !isSearchActive && !isPullingToSearch) {
+      setIsPullingToSearch(true);
+      pullToSearchOpacity.value = withTiming(1, { duration: 200 });
+      pullToSearchTranslateY.value = withTiming(0, { duration: 200 });
+    } else if (contentOffset.y >= -10 && isPullingToSearch) {
+      setIsPullingToSearch(false);
+      pullToSearchOpacity.value = withTiming(0, { duration: 200 });
+      pullToSearchTranslateY.value = withTiming(-50, { duration: 200 });
+    }
+  };
+
+  const handleScrollEndDrag = (event: any) => {
+    const { contentOffset } = event.nativeEvent;
+    if (contentOffset.y < -50 && !isSearchActive) {
+      toggleSearch();
+      setIsPullingToSearch(false);
+      pullToSearchOpacity.value = withTiming(0, { duration: 200 });
+      pullToSearchTranslateY.value = withTiming(-50, { duration: 200 });
     }
   };
 
@@ -254,6 +280,11 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
     transform: [{ scale: fabScale.value }],
   }));
 
+  const pullToSearchAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: pullToSearchOpacity.value,
+    transform: [{ translateY: pullToSearchTranslateY.value }],
+  }));
+
   const renderNoteItem = ({ item, index }: { item: Note; index: number }) => {
     const preview = extractTextFromMarkdown(item.content);
 
@@ -349,14 +380,16 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
         </TouchableOpacity>
         <Text style={[styles.title, { color: theme.text }]}>{t('notes.title')}</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Canvas')}
-            style={styles.actionButton}
-          >
-            <Text style={[styles.actionIcon, { color: theme.primary }]}>🗺️</Text>
-          </TouchableOpacity>
           <TouchableOpacity onPress={toggleSearch} style={styles.actionButton}>
             <Text style={[styles.actionIcon, { color: theme.primary }]}>🔍</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              // TODO: Implement three-dots menu functionality
+            }}
+            style={styles.actionButton}
+          >
+            <Text style={[styles.actionIcon, { color: theme.primary }]}>⋯</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -382,22 +415,34 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation }) => {
         />
       </Animated.View>
 
-      <FlatList
-        data={notes}
-        renderItem={renderNoteItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={[
-          styles.listContainer,
-          notes.length === 0 && styles.emptyListContainer,
-        ]}
-        ListEmptyComponent={!isLoading ? EmptyState : null}
-        showsVerticalScrollIndicator={false}
-        onScrollBeginDrag={() => {
-          if (isSearchActive) {
-            toggleSearch();
-          }
-        }}
-      />
+      <View style={styles.listWrapper}>
+        <Animated.View style={[styles.pullToSearchIndicator, pullToSearchAnimatedStyle]}>
+          <Text style={[styles.pullToSearchText, { color: theme.primary }]}>
+            {t('notes.pullToSearch')}
+          </Text>
+          <Text style={[styles.pullToSearchIcon, { color: theme.primary }]}>🔍</Text>
+        </Animated.View>
+
+        <FlatList
+          data={notes}
+          renderItem={renderNoteItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[
+            styles.listContainer,
+            notes.length === 0 && styles.emptyListContainer,
+          ]}
+          ListEmptyComponent={!isLoading ? EmptyState : null}
+          showsVerticalScrollIndicator={false}
+          onScroll={handleScrollPullDown}
+          onScrollEndDrag={handleScrollEndDrag}
+          scrollEventThrottle={16}
+          onScrollBeginDrag={() => {
+            if (isSearchActive) {
+              toggleSearch();
+            }
+          }}
+        />
+      </View>
 
       <Modal
         visible={!!contextMenuState}
@@ -561,6 +606,29 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     borderWidth: 1,
+    fontSize: 16,
+  },
+  listWrapper: {
+    flex: 1,
+    position: 'relative',
+  },
+  pullToSearchIndicator: {
+    position: 'absolute',
+    top: -40,
+    left: 0,
+    right: 0,
+    height: 40,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  pullToSearchText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginRight: 8,
+  },
+  pullToSearchIcon: {
     fontSize: 16,
   },
   listContainer: {

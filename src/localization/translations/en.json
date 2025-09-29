@@ -14,6 +14,7 @@
     "newNote": "New Note",
     "untitled": "Untitled",
     "search": "Search notes...",
+    "pullToSearch": "Pull down to search",
     "empty": {
       "title": "No notes yet",
       "subtitle": "Tap the + button to create your first note"
@@ -85,6 +86,11 @@
     "clearLocalData": "Clear Local Data",
     "clearLocalDataTitle": "Clear Local Data?",
     "clearLocalDataMessage": "This will remove all local notes from this device."
+  },
+  "editor": {
+    "actions": {
+      "focusMode": "Focus Mode"
+    }
   },
   "common": {
     "cancel": "Cancel",

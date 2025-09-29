@@ -10,6 +10,9 @@ import {
   Platform,
   Alert,
   Dimensions,
+  Modal,
+  TouchableWithoutFeedback,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
@@ -20,10 +23,13 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLocalization } from '../contexts/LocalizationContext';
 import { databaseService } from '../services/DatabaseService';
 import { Note, Drawing } from '../types';
 import { generateId } from '../utils';
 import DrawingCanvas from '../components/DrawingCanvas';
+import Clipboard from '@react-native-clipboard/clipboard';
+import HapticFeedback from 'react-native-haptic-feedback';
 
 interface NoteEditorScreenProps {
   navigation: any;
@@ -33,7 +39,8 @@ interface NoteEditorScreenProps {
 const { width, height } = Dimensions.get('window');
 
 const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }) => {
-  const { theme } = useTheme();
+  const { theme, themeName } = useTheme();
+  const { t } = useLocalization();
   const { noteId } = route.params || {};
 
   const [note, setNote] = useState<Note | null>(null);
@@ -42,8 +49,10 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
   const [isLoading, setIsLoading] = useState(true);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [drawings, setDrawings] = useState<Drawing[]>([]);
+  const [showContextMenu, setShowContextMenu] = useState(false);
 
   const titleRef = useRef<TextInput>(null);
   const contentRef = useRef<TextInput>(null);
@@ -51,6 +60,13 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
 
   const toolbarOpacity = useSharedValue(1);
   const headerOpacity = useSharedValue(1);
+
+  const CONTEXT_MENU_ACTIONS = [
+    { id: 'focus', label: t('editor.actions.focusMode'), icon: '👁️' },
+    { id: 'copy', label: t('notes.actions.copy'), icon: '📋' },
+    { id: 'share', label: t('notes.actions.share'), icon: '📤' },
+    { id: 'delete', label: t('notes.actions.delete'), icon: '🗑️', destructive: true },
+  ] as const;
 
   useEffect(() => {
     if (noteId) {
@@ -157,10 +173,9 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
   const formatSelection = (prefix: string, suffix: string = '') => {
     if (!contentRef.current) return;
 
-    const selection = contentRef.current._lastNativeSelection;
-    if (!selection) return;
-
-    const { start, end } = selection;
+    // Use the current selection, or cursor position if no selection
+    const start = selection.start;
+    const end = selection.end;
     const selectedText = content.slice(start, end);
     const formattedText = prefix + selectedText + suffix;
 
@@ -171,13 +186,17 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
 
     setContent(newText);
 
-    // Set cursor position after formatting
+    // Set cursor position between the formatting markers if no text was selected
     setTimeout(() => {
       if (contentRef.current) {
-        const newEnd = start + formattedText.length;
+        const newCursorPos = selectedText.length === 0
+          ? start + prefix.length
+          : start + formattedText.length;
         contentRef.current.setNativeProps({
-          selection: { start: newEnd, end: newEnd }
+          selection: { start: newCursorPos, end: newCursorPos }
         });
+        setCursorPosition(newCursorPos);
+        setSelection({ start: newCursorPos, end: newCursorPos });
       }
     }, 10);
   };
@@ -230,6 +249,60 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
     navigation.goBack();
   };
 
+  const handleContextMenuAction = async (actionId: string) => {
+    setShowContextMenu(false);
+
+    switch (actionId) {
+      case 'focus':
+        toggleFocusMode();
+        break;
+      case 'copy':
+        try {
+          const textContent = title + '\n\n' + content;
+          Clipboard.setString(textContent);
+          HapticFeedback.trigger('impactLight');
+        } catch (error) {
+          console.error('Failed to copy note:', error);
+        }
+        break;
+      case 'share':
+        try {
+          const textContent = title + '\n\n' + content;
+          await Share.share({
+            message: textContent,
+            title: title || t('notes.untitled'),
+          });
+        } catch (error) {
+          console.error('Failed to share note:', error);
+        }
+        break;
+      case 'delete':
+        if (noteId) {
+          Alert.alert(
+            t('notes.delete.title'),
+            t('notes.delete.message'),
+            [
+              { text: t('common.cancel'), style: 'cancel' },
+              {
+                text: t('common.delete'),
+                style: 'destructive',
+                onPress: async () => {
+                  try {
+                    await databaseService.deleteNote(noteId);
+                    navigation.goBack();
+                  } catch (error) {
+                    console.error('Failed to delete note:', error);
+                    Alert.alert(t('common.error'), t('errors.deleteNote'));
+                  }
+                },
+              },
+            ]
+          );
+        }
+        break;
+    }
+  };
+
   const toolbarAnimatedStyle = useAnimatedStyle(() => ({
     opacity: toolbarOpacity.value,
     transform: [
@@ -270,10 +343,11 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
           </TouchableOpacity>
 
           <View style={styles.headerActions}>
-            <TouchableOpacity onPress={toggleFocusMode} style={styles.actionButton}>
-              <Text style={[styles.actionIcon, { color: theme.primary }]}>
-                {isFocusMode ? '👁️' : '🎯'}
-              </Text>
+            <TouchableOpacity
+              onPress={() => setShowContextMenu(true)}
+              style={styles.actionButton}
+            >
+              <Text style={[styles.actionIcon, { color: theme.primary }]}>⋯</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -301,7 +375,11 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
             placeholderTextColor={theme.textSecondary}
             value={content}
             onChangeText={setContent}
-            onSelectionChange={(e) => setCursorPosition(e.nativeEvent.selection.start)}
+            onSelectionChange={(e) => {
+              const { start, end } = e.nativeEvent.selection;
+              setCursorPosition(start);
+              setSelection({ start, end });
+            }}
             multiline
             scrollEnabled={false}
             textAlignVertical="top"
@@ -361,6 +439,58 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
           onClose={handleDrawingCancel}
         />
       )}
+
+      <Modal
+        visible={showContextMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowContextMenu(false)}
+      >
+        <View style={styles.contextMenuWrapper}>
+          <TouchableWithoutFeedback onPress={() => setShowContextMenu(false)}>
+            <View style={[StyleSheet.absoluteFillObject, styles.contextMenuBackdrop]} />
+          </TouchableWithoutFeedback>
+
+          <View style={styles.contextMenuContainer}>
+            <Animated.View
+              style={[
+                styles.contextMenuContent,
+                {
+                  backgroundColor: theme.surface,
+                  borderColor: theme.border,
+                },
+              ]}
+            >
+              <Text style={[styles.contextMenuTitle, { color: theme.text }]}>
+                {title || t('notes.untitled')}
+              </Text>
+
+              <View style={[styles.contextMenuActions, { borderColor: theme.border }]}>
+                {CONTEXT_MENU_ACTIONS.map((action) => (
+                  <TouchableOpacity
+                    key={action.id}
+                    onPress={() => handleContextMenuAction(action.id)}
+                    style={[
+                      styles.contextMenuAction,
+                      action.destructive && { borderColor: theme.border }
+                    ]}
+                  >
+                    <Text style={styles.contextMenuIcon}>{action.icon}</Text>
+                    <Text
+                      style={[
+                        styles.contextMenuActionLabel,
+                        { color: action.destructive ? '#d62d20' : theme.text },
+                      ]}
+                    >
+                      {action.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </Animated.View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -376,9 +506,10 @@ const ToolbarButton: React.FC<ToolbarButtonProps> = ({ icon, onPress, theme, sty
   const scale = useSharedValue(1);
 
   const handlePress = () => {
-    scale.value = withSpring(0.8, {}, () => {
-      scale.value = withSpring(1);
-    });
+    scale.value = withSpring(0.8, { duration: 100 });
+    setTimeout(() => {
+      scale.value = withSpring(1, { duration: 100 });
+    }, 100);
     onPress();
   };
 
@@ -395,6 +526,7 @@ const ToolbarButton: React.FC<ToolbarButtonProps> = ({ icon, onPress, theme, sty
           style,
         ]}
         onPress={handlePress}
+        activeOpacity={0.7}
       >
         <Text style={[styles.toolbarButtonText, { color: theme.text }]}>{icon}</Text>
       </TouchableOpacity>
@@ -483,6 +615,54 @@ const styles = StyleSheet.create({
   },
   italicButton: {
     fontStyle: 'italic',
+  },
+  contextMenuWrapper: {
+    flex: 1,
+  },
+  contextMenuBackdrop: {
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  },
+  contextMenuContainer: {
+    position: 'absolute',
+    top: 130,
+    right: 20,
+    width: 250,
+  },
+  contextMenuContent: {
+    width: '100%',
+    borderRadius: 18,
+    borderWidth: 1,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+  contextMenuTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    textAlign: 'center',
+  },
+  contextMenuActions: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  contextMenuAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  contextMenuIcon: {
+    fontSize: 18,
+    marginRight: 12,
+  },
+  contextMenuActionLabel: {
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
 

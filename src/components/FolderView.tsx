@@ -121,7 +121,7 @@ const FolderView: React.FC<FolderViewProps> = ({
           >
             <View style={[
               styles.folderIconContainer,
-              { backgroundColor: (folder.color || theme.accent) + '20' }
+              { backgroundColor: (folder.color || theme.accent) + '40' }
             ]}>
               <Text style={styles.folderIcon}>{folder.icon || '📁'}</Text>
             </View>

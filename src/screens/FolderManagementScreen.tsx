@@ -139,7 +139,7 @@ const FolderManagementScreen: React.FC<FolderManagementScreenProps> = ({ navigat
   const renderFolderItem = ({ item }: { item: Folder }) => (
     <View style={[styles.folderCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
       <View style={styles.folderCardHeader}>
-        <View style={[styles.folderIconContainer, { backgroundColor: (item.color || theme.accent) + '20' }]}>
+        <View style={[styles.folderIconContainer, { backgroundColor: (item.color || theme.accent) + '40' }]}>
           <Text style={styles.folderIcon}>{item.icon || '📁'}</Text>
         </View>
         <View style={styles.folderInfo}>
@@ -233,8 +233,19 @@ const FolderManagementScreen: React.FC<FolderManagementScreenProps> = ({ navigat
         animationType="fade"
         onRequestClose={() => setShowCreateModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => {
+            setShowCreateModal(false);
+            resetForm();
+          }}
+        >
+          <TouchableOpacity
+            style={[styles.modalContent, { backgroundColor: theme.surface, borderColor: theme.border }]}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
             <Text style={[styles.modalTitle, { color: theme.text }]}>
               {editingFolder ? t('folders.editFolder') : t('folders.createFolder')}
             </Text>
@@ -340,8 +351,8 @@ const FolderManagementScreen: React.FC<FolderManagementScreenProps> = ({ navigat
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );

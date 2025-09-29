@@ -271,13 +271,12 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoid}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        
-
         <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
           <TextInput
             ref={titleRef}
@@ -425,7 +424,7 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 };
 

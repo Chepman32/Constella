@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
   },
   contextMenuContainer: {
     position: 'absolute',
-    top: 130,
+    top: 90,
     right: 20,
     width: 250,
   },

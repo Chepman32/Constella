@@ -288,7 +288,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
           style={styles.backButton}
         >
           <Text style={[styles.backIcon, { color: theme.primary }]}>←</Text>
-          <Text style={[styles.backLabel, { color: theme.primary }]}>All Notes</Text>
+          <Text style={[styles.backLabel, { color: theme.primary }]}>{t('folders.allNotes')}</Text>
         </TouchableOpacity>
       ),
     });

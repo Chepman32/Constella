@@ -57,6 +57,8 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [lastInsertedImage, setLastInsertedImage] = useState<string | null>(null);
+  const [showImageContextMenu, setShowImageContextMenu] = useState(false);
+  const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
 
   const titleRef = useRef<TextInput>(null);
   const richEditorRef = useRef<RichEditor>(null);
@@ -70,6 +72,13 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
     { id: 'copy', label: t('notes.actions.copy'), icon: 'content-copy', destructive: false },
     { id: 'share', label: t('notes.actions.share'), icon: 'share-variant-outline', destructive: false },
     { id: 'delete', label: t('notes.actions.delete'), icon: 'delete-outline', destructive: true },
+  ] as const;
+
+  const IMAGE_CONTEXT_MENU_ACTIONS = [
+    { id: 'edit', label: 'Edit', icon: 'pencil', destructive: false },
+    { id: 'copy', label: 'Copy', icon: 'content-copy', destructive: false },
+    { id: 'cut', label: 'Cut', icon: 'content-cut', destructive: false },
+    { id: 'remove', label: 'Remove', icon: 'delete-outline', destructive: true },
   ] as const;
 
   const saveNote = useCallback(async () => {
@@ -261,6 +270,56 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
   };
 
   
+
+  const handleImageContextMenuAction = async (actionId: string) => {
+    if (!selectedImageSrc) return;
+
+    setShowImageContextMenu(false);
+
+    switch (actionId) {
+      case 'edit':
+        // Set the selected image as the last inserted image and open drawing canvas
+        setLastInsertedImage(selectedImageSrc);
+        setIsDrawingMode(true);
+        HapticFeedback.trigger('impactLight');
+        break;
+      case 'copy':
+        try {
+          Clipboard.setString(selectedImageSrc);
+          HapticFeedback.trigger('impactLight');
+        } catch (error) {
+          console.error('Failed to copy image:', error);
+        }
+        break;
+      case 'cut':
+        try {
+          Clipboard.setString(selectedImageSrc);
+          // Remove the image from content
+          const updatedContent = content.replace(
+            new RegExp(`<img[^>]*src="${selectedImageSrc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*>`, 'g'),
+            ''
+          );
+          setContent(updatedContent);
+          richEditorRef.current?.setContentHTML(updatedContent);
+          HapticFeedback.trigger('impactLight');
+        } catch (error) {
+          console.error('Failed to cut image:', error);
+        }
+        break;
+      case 'remove':
+        // Remove the image from content
+        const updatedContent = content.replace(
+          new RegExp(`<img[^>]*src="${selectedImageSrc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*>`, 'g'),
+          ''
+        );
+        setContent(updatedContent);
+        richEditorRef.current?.setContentHTML(updatedContent);
+        HapticFeedback.trigger('impactLight');
+        break;
+    }
+
+    setSelectedImageSrc(null);
+  };
 
   const handleContextMenuAction = async (actionId: string) => {
     setShowContextMenu(false);
@@ -466,6 +525,14 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
                     }
                   }
                 });
+
+                // Add context menu styling to images
+                const images = document.querySelectorAll('img');
+                images.forEach(function(img) {
+                  img.style.cursor = 'pointer';
+                  img.style.userSelect = 'none';
+                  img.style.webkitUserSelect = 'none';
+                });
               })();
             `}
           />
@@ -668,6 +735,64 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
                   <TouchableOpacity
                     key={action.id}
                     onPress={() => handleContextMenuAction(action.id)}
+                    style={[
+                      styles.contextMenuAction,
+                      action.destructive && { borderColor: theme.border }
+                    ]}
+                  >
+                    <Icon
+                      name={action.icon}
+                      size={22}
+                      style={styles.contextMenuIcon}
+                      color={action.destructive ? '#d62d20' : theme.text}
+                    />
+                    <Text
+                      style={[
+                        styles.contextMenuActionLabel,
+                        action.destructive ? styles.destructiveText : { color: theme.text },
+                      ]}
+                    >
+                      {action.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </Animated.View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Image Context Menu Modal */}
+      <Modal
+        visible={showImageContextMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowImageContextMenu(false)}
+      >
+        <View style={styles.contextMenuWrapper}>
+          <TouchableWithoutFeedback onPress={() => setShowImageContextMenu(false)}>
+            <View style={[StyleSheet.absoluteFillObject, styles.contextMenuBackdrop]} />
+          </TouchableWithoutFeedback>
+
+          <View style={styles.contextMenuContainer}>
+            <Animated.View
+              style={[
+                styles.contextMenuContent,
+                {
+                  backgroundColor: theme.surface,
+                  borderColor: theme.border,
+                },
+              ]}
+            >
+              <Text style={[styles.contextMenuTitle, { color: theme.text }]}>
+                Image Options
+              </Text>
+
+              <View style={[styles.contextMenuActions, { borderColor: theme.border }]}>
+                {IMAGE_CONTEXT_MENU_ACTIONS.map((action) => (
+                  <TouchableOpacity
+                    key={action.id}
+                    onPress={() => handleImageContextMenuAction(action.id)}
                     style={[
                       styles.contextMenuAction,
                       action.destructive && { borderColor: theme.border }

@@ -203,14 +203,17 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     toolbarOpacity.value = withSpring(toolbarOpacity.value === 1 ? 0 : 1);
   };
 
-  const toolbarAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: toolbarOpacity.value,
-    transform: [
-      {
-        translateY: toolbarOpacity.value === 1 ? 0 : 100,
-      },
-    ],
-  }));
+  const toolbarAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      opacity: toolbarOpacity.value,
+      transform: [
+        {
+          translateY: withSpring(toolbarOpacity.value === 1 ? 0 : 100),
+        },
+      ],
+    };
+  });
 
   const colors = [
     { id: 'text', value: theme.text },

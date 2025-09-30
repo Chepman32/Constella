@@ -197,7 +197,15 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     ],
   }));
 
-  const colors = [theme.text, theme.primary, theme.accent, '#FF3B30', '#34C759', '#007AFF', '#FF9500'];
+  const colors = [
+    { id: 'text', value: theme.text },
+    { id: 'primary', value: theme.primary },
+    { id: 'accent', value: theme.accent },
+    { id: 'red', value: '#FF3B30' },
+    { id: 'green', value: '#34C759' },
+    { id: 'blue', value: '#007AFF' },
+    { id: 'orange', value: '#FF9500' }
+  ];
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -271,16 +279,16 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           <View style={styles.colorPalette}>
             {colors.map((color) => (
               <TouchableOpacity
-                key={color}
+                key={color.id}
                 style={[
                   styles.colorButton,
                   {
-                    backgroundColor: color,
-                    borderColor: currentColor === color ? theme.primary : theme.border,
-                    borderWidth: currentColor === color ? 3 : 1,
+                    backgroundColor: color.value,
+                    borderColor: currentColor === color.value ? theme.primary : theme.border,
+                    borderWidth: currentColor === color.value ? 3 : 1,
                   },
                 ]}
-                onPress={() => handleColorChange(color)}
+                onPress={() => handleColorChange(color.value)}
               />
             ))}
           </View>

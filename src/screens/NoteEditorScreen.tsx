@@ -31,6 +31,8 @@ import { RichEditor, RichToolbar, actions } from 'react-native-pell-rich-editor'
 import Clipboard from '@react-native-clipboard/clipboard';
 import HapticFeedback from 'react-native-haptic-feedback';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import DocumentPicker from 'react-native-document-picker';
+import { launchImageLibrary } from 'react-native-image-picker';
 
 interface NoteEditorScreenProps {
   navigation: any;
@@ -202,11 +204,15 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
 
 
 
-  const handleDrawingComplete = (drawing: Drawing) => {
+  const handleDrawingComplete = async (drawing: Drawing) => {
     setDrawings((prev) => [...prev, drawing]);
     setIsDrawingMode(false);
 
-    
+    // Insert the drawing as an image in the editor
+    if (drawing.thumbnail) {
+      richEditorRef.current?.insertImage(drawing.thumbnail, 'width: 100%; max-width: 500px;');
+      HapticFeedback.trigger('impactLight');
+    }
   };
 
   const handleDrawingCancel = () => {
@@ -346,6 +352,50 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
                   font-style: italic;
                   background-color: ${theme.surface};
                 }
+
+                /* Checklist styles */
+                ul.checklist {
+                  list-style: none;
+                  padding-left: 0;
+                }
+                ul.checklist li {
+                  position: relative;
+                  padding-left: 40px;
+                  margin: 12px 0;
+                  cursor: pointer;
+                  user-select: none;
+                }
+                ul.checklist li input[type="checkbox"] {
+                  position: absolute;
+                  left: 0;
+                  top: 0;
+                  width: 28px;
+                  height: 28px;
+                  cursor: pointer;
+                  margin: 0;
+                  transform: scale(1.3);
+                }
+                ul.checklist li.checked {
+                  text-decoration: line-through;
+                  opacity: 0.6;
+                }
+                ul.checklist li .delete-btn {
+                  position: absolute;
+                  right: 0;
+                  top: 0;
+                  padding: 4px 8px;
+                  background: #ff3b30;
+                  color: white;
+                  border: none;
+                  border-radius: 4px;
+                  font-size: 12px;
+                  cursor: pointer;
+                  opacity: 0;
+                  transition: opacity 0.2s;
+                }
+                ul.checklist li:hover .delete-btn {
+                  opacity: 1;
+                }
               `
             }}
             initialContentHTML={content}
@@ -354,6 +404,29 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
             onPaste={() => {
               // Handle paste events if needed
             }}
+            injectedJavaScript={`
+              (function() {
+                // Handle checkbox clicks
+                document.addEventListener('click', function(e) {
+                  if (e.target.type === 'checkbox' && e.target.closest('ul.checklist')) {
+                    const li = e.target.closest('li');
+                    if (e.target.checked) {
+                      li.classList.add('checked');
+                    } else {
+                      li.classList.remove('checked');
+                    }
+                  }
+
+                  // Handle delete button clicks
+                  if (e.target.classList.contains('delete-btn')) {
+                    const li = e.target.closest('li');
+                    if (li) {
+                      li.remove();
+                    }
+                  }
+                });
+              })();
+            `}
           />
         </ScrollView>
 
@@ -397,8 +470,10 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
             <TouchableOpacity
               style={styles.bottomMenuButton}
               onPress={() => {
-                // Handle checklist
-                Alert.alert('Checklist', 'Coming soon');
+                richEditorRef.current?.insertHTML(
+                  '<ul class="checklist"><li><input type="checkbox" /><span contenteditable="true">New task</span><button class="delete-btn">Delete</button></li></ul>'
+                );
+                HapticFeedback.trigger('impactLight');
               }}
             >
               <Icon name="checkbox-marked-outline" size={24} color={theme.primary} />
@@ -406,9 +481,51 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
 
             <TouchableOpacity
               style={styles.bottomMenuButton}
-              onPress={() => {
-                // Handle attachment
-                Alert.alert('Attachment', 'Coming soon');
+              onPress={async () => {
+                try {
+                  Alert.alert(
+                    'Add Attachment',
+                    'Choose attachment type',
+                    [
+                      {
+                        text: 'Image',
+                        onPress: async () => {
+                          const result = await launchImageLibrary({
+                            mediaType: 'photo',
+                            quality: 0.8,
+                          });
+                          if (result.assets && result.assets[0].uri) {
+                            richEditorRef.current?.insertImage(result.assets[0].uri);
+                            HapticFeedback.trigger('impactLight');
+                          }
+                        },
+                      },
+                      {
+                        text: 'Document',
+                        onPress: async () => {
+                          const result = await DocumentPicker.pick({
+                            type: [DocumentPicker.types.pdf, DocumentPicker.types.doc, DocumentPicker.types.docx],
+                          });
+                          if (result && result[0]) {
+                            const fileName = result[0].name || 'Document';
+                            richEditorRef.current?.insertHTML(
+                              `<a href="${result[0].uri}" target="_blank">📎 ${fileName}</a>`
+                            );
+                            HapticFeedback.trigger('impactLight');
+                          }
+                        },
+                      },
+                      {
+                        text: 'Cancel',
+                        style: 'cancel',
+                      },
+                    ]
+                  );
+                } catch (err) {
+                  if (!DocumentPicker.isCancel(err)) {
+                    console.error('Document picker error:', err);
+                  }
+                }
               }}
             >
               <Icon name="paperclip" size={24} color={theme.primary} />
@@ -423,21 +540,37 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
 
             <TouchableOpacity
               style={styles.bottomMenuButton}
-              onPress={() => {
-                // Handle note icon
-                Alert.alert('Note', 'Coming soon');
+              onPress={async () => {
+                try {
+                  // Save current note
+                  await saveNote();
+
+                  // Navigate to create a new note
+                  navigation.push('Editor', { noteId: undefined, folderId: note?.folderId });
+                  HapticFeedback.trigger('impactLight');
+                } catch (error) {
+                  console.error('Failed to create new note:', error);
+                  Alert.alert(t('common.error'), 'Failed to create new note');
+                }
               }}
             >
-              <Icon name="note-edit-outline" size={24} color={theme.primary} />
+              <Icon name="note-plus-outline" size={24} color={theme.primary} />
             </TouchableOpacity>
           </View>
         )}
       </KeyboardAvoidingView>
       {isDrawingMode && (
-        <DrawingCanvas
-          onDrawingComplete={handleDrawingComplete}
-          onClose={handleDrawingCancel}
-        />
+        <Modal
+          visible={isDrawingMode}
+          animationType="slide"
+          presentationStyle="fullScreen"
+          onRequestClose={handleDrawingCancel}
+        >
+          <DrawingCanvas
+            onDrawingComplete={handleDrawingComplete}
+            onClose={handleDrawingCancel}
+          />
+        </Modal>
       )}
 
       <Modal

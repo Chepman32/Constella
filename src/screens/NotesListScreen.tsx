@@ -58,6 +58,8 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
   const [showMoveToFolderModal, setShowMoveToFolderModal] = useState(false);
   const [noteToMove, setNoteToMove] = useState<Note | null>(null);
   const windowDimensions = useWindowDimensions();
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set());
 
   
 
@@ -251,15 +253,30 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
       title: currentFolderName,
       headerRight: () => (
         <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => setShowFolderPicker(true)} style={styles.actionButton}>
-            <Text style={[styles.actionIcon, { color: theme.primary }]}>📁</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={toggleSearch} style={styles.actionButton}>
-            <Text style={[styles.actionIcon, { color: theme.primary }]}>🔍</Text>
-          </TouchableOpacity>
+          {isSelectionMode ? (
+            <TouchableOpacity onPress={handleSelectAll} style={styles.actionButton}>
+              <Text style={[styles.actionIcon, { color: theme.primary, fontSize: 14 }]}>Select All</Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <TouchableOpacity onPress={() => setShowFolderPicker(true)} style={styles.actionButton}>
+                <Text style={[styles.actionIcon, { color: theme.primary }]}>📁</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={toggleSearch} style={styles.actionButton}>
+                <Text style={[styles.actionIcon, { color: theme.primary }]}>🔍</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       ),
-      headerLeft: selectedFolderId === null ? () => (
+      headerLeft: isSelectionMode ? () => (
+        <TouchableOpacity
+          onPress={exitSelectionMode}
+          style={styles.actionButton}
+        >
+          <Text style={[styles.actionIcon, { color: theme.primary }]}>✕</Text>
+        </TouchableOpacity>
+      ) : selectedFolderId === null ? () => (
         <TouchableOpacity
           onPress={() => navigation.openDrawer()}
           style={styles.actionButton}
@@ -276,17 +293,29 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
         </TouchableOpacity>
       ),
     });
-  }, [navigation, currentFolderName, theme, toggleSearch, selectedFolderId]);
+  }, [navigation, currentFolderName, theme, toggleSearch, selectedFolderId, isSelectionMode, selectedNoteIds]);
 
 
   const handleMoveNoteToFolder = async (targetFolderId: string | null) => {
-    if (!noteToMove) return;
+    if (!noteToMove && selectedNoteIds.size === 0) return;
 
     try {
-      await databaseService.updateNote(noteToMove.id, { folderId: targetFolderId || undefined });
+      const folderIdToSet = targetFolderId === null ? undefined : targetFolderId;
+
+      if (isSelectionMode && selectedNoteIds.size > 0) {
+        // Bulk move
+        for (const noteId of Array.from(selectedNoteIds)) {
+          await databaseService.updateNote(noteId, { folderId: folderIdToSet });
+        }
+        exitSelectionMode();
+      } else if (noteToMove) {
+        // Single note move
+        await databaseService.updateNote(noteToMove.id, { folderId: folderIdToSet });
+        setNoteToMove(null);
+      }
       setShowMoveToFolderModal(false);
-      setNoteToMove(null);
-      loadNotes();
+      await loadNotes();
+      HapticFeedback.trigger('impactLight');
     } catch (error) {
       console.error('Failed to move note:', error);
       Alert.alert(t('common.error'), t('errors.moveNote'));
@@ -353,36 +382,126 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
     </Pressable>
   );
 
+  const handleNotePress = (note: Note) => {
+    if (isSelectionMode) {
+      toggleNoteSelection(note.id);
+    } else {
+      navigation.navigate('Editor', { noteId: note.id });
+    }
+  };
+
+  const handleNoteLongPress = (note: Note, event: any) => {
+    if (!isSelectionMode) {
+      HapticFeedback.trigger('impactMedium');
+      setIsSelectionMode(true);
+      setSelectedNoteIds(new Set([note.id]));
+    }
+  };
+
+  const toggleNoteSelection = (noteId: string) => {
+    HapticFeedback.trigger('impactLight');
+    setSelectedNoteIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(noteId)) {
+        newSet.delete(noteId);
+        if (newSet.size === 0) {
+          setIsSelectionMode(false);
+        }
+      } else {
+        newSet.add(noteId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    HapticFeedback.trigger('impactLight');
+    const allNoteIds = notes.map(note => note.id);
+    setSelectedNoteIds(new Set(allNoteIds));
+  };
+
+  const exitSelectionMode = () => {
+    setIsSelectionMode(false);
+    setSelectedNoteIds(new Set());
+  };
+
+  const handleBulkMoveToFolder = () => {
+    if (selectedNoteIds.size === 0) return;
+
+    setShowMoveToFolderModal(true);
+  };
+
+  const handleBulkFavorite = async () => {
+    if (selectedNoteIds.size === 0) return;
+
+    HapticFeedback.trigger('impactLight');
+    Alert.alert(t('common.comingSoon'), t('common.comingSoonMessage'));
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedNoteIds.size === 0) return;
+
+    const count = selectedNoteIds.size;
+    Alert.alert(
+      t('notes.delete.title'),
+      `Are you sure you want to delete ${count} note${count > 1 ? 's' : ''}?`,
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              for (const noteId of Array.from(selectedNoteIds)) {
+                await databaseService.deleteNote(noteId);
+              }
+              exitSelectionMode();
+              loadNotes();
+            } catch (error) {
+              console.error('Failed to delete notes:', error);
+              Alert.alert(t('common.error'), t('errors.deleteNote'));
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderNoteItem = ({ item, index }: { item: Note; index: number }) => {
     const preview = extractTextFromMarkdown(item.content);
+    const isSelected = selectedNoteIds.has(item.id);
 
     return (
       <Pressable
-          onPress={() => navigation.navigate('Editor', { noteId: item.id })}
-          onLongPress={(event) =>
-            openContextMenu(item, {
-              pageX: event.nativeEvent.pageX,
-              pageY: event.nativeEvent.pageY,
-            })
-          }
+          onPress={() => handleNotePress(item)}
+          onLongPress={(event) => handleNoteLongPress(item, event)}
           delayLongPress={250}
           style={({ pressed }) => [
             styles.noteCard,
             {
               backgroundColor: theme.surface,
-              borderColor: theme.border,
+              borderColor: isSelected ? theme.primary : theme.border,
+              borderWidth: isSelected ? 2 : 1,
               opacity: pressed ? 0.95 : 1,
             },
           ]}
         >
-          <View style={styles.noteHeader}>
-            <Text style={[styles.noteTitle, { color: theme.text }]}>
-              {item.title || t('notes.untitled')}
-            </Text>
-            <Text style={[styles.noteDate, { color: theme.textSecondary }]}>
-              {formatDate(item.lastModified)}
-            </Text>
-          </View>
+          {isSelectionMode && (
+            <View style={[styles.checkbox, { borderColor: theme.border }]}>
+              {isSelected && (
+                <Icon name="check" size={14} color={theme.primary} />
+              )}
+            </View>
+          )}
+          <View style={styles.noteContent}>
+            <View style={styles.noteHeader}>
+              <Text style={[styles.noteTitle, { color: theme.text }]}>
+                {item.title || t('notes.untitled')}
+              </Text>
+              <Text style={[styles.noteDate, { color: theme.textSecondary }]}>
+                {formatDate(item.lastModified)}
+              </Text>
+            </View>
 
           {preview && (
             <Text style={[styles.notePreview, { color: theme.textSecondary }]}>
@@ -390,25 +509,26 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
             </Text>
           )}
 
-          {item.tags.length > 0 && (
-            <View style={styles.tagsContainer}>
-              {item.tags.slice(0, 3).map((tag, tagIndex) => (
-                <View
-                  key={tagIndex}
-                  style={[styles.tag, { backgroundColor: theme.accent + '20' }]}
-                >
-                  <Text style={[styles.tagText, { color: theme.accent }]}>
-                    {tag}
+            {item.tags.length > 0 && (
+              <View style={styles.tagsContainer}>
+                {item.tags.slice(0, 3).map((tag, tagIndex) => (
+                  <View
+                    key={tagIndex}
+                    style={[styles.tag, { backgroundColor: theme.accent + '20' }]}
+                  >
+                    <Text style={[styles.tagText, { color: theme.accent }]}>
+                      {tag}
+                    </Text>
+                  </View>
+                ))}
+                {item.tags.length > 3 && (
+                  <Text style={[styles.moreTagsText, { color: theme.textSecondary }]}>
+                    +{item.tags.length - 3}
                   </Text>
-                </View>
-              ))}
-              {item.tags.length > 3 && (
-                <Text style={[styles.moreTagsText, { color: theme.textSecondary }]}>
-                  +{item.tags.length - 3}
-                </Text>
-              )}
-            </View>
-          )}
+                )}
+              </View>
+            )}
+          </View>
         </Pressable>
     );
   };
@@ -619,17 +739,50 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
       />
 
       {/* Move Note to Folder Modal */}
-      {noteToMove && (
-        <FolderPicker
-          visible={showMoveToFolderModal}
-          onClose={() => {
-            setShowMoveToFolderModal(false);
-            setNoteToMove(null);
-          }}
-          onFolderSelect={(folderId) => handleMoveNoteToFolder(folderId)}
-          selectedFolderId={noteToMove.folderId}
-          allowCreateFolder={false}
-        />
+      <FolderPicker
+        visible={showMoveToFolderModal}
+        onClose={() => {
+          setShowMoveToFolderModal(false);
+          setNoteToMove(null);
+        }}
+        onFolderSelect={(folderId) => handleMoveNoteToFolder(folderId)}
+        selectedFolderId={noteToMove?.folderId}
+        allowCreateFolder={false}
+      />
+
+      {/* Selection Mode Action Bar */}
+      {isSelectionMode && selectedNoteIds.size > 0 && (
+        <View style={[styles.selectionActionBar, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
+          <TouchableOpacity
+            style={[styles.selectionActionButton, { backgroundColor: theme.primary + '15' }]}
+            onPress={handleBulkMoveToFolder}
+          >
+            <Icon name="folder-move" size={18} color={theme.primary} />
+            <Text style={[styles.selectionActionButtonText, { color: theme.primary }]}>
+              Move
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.selectionActionButton, { backgroundColor: theme.accent + '15' }]}
+            onPress={handleBulkFavorite}
+          >
+            <Icon name="star" size={18} color={theme.accent} />
+            <Text style={[styles.selectionActionButtonText, { color: theme.accent }]}>
+              Favorite
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.selectionActionButton, { backgroundColor: '#d62d2015' }]}
+            onPress={handleBulkDelete}
+          >
+            <Icon name="delete" size={18} color="#d62d20" />
+            <Text style={[styles.selectionActionButtonText, { color: '#d62d20' }]}>
+              Remove
+            </Text>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
@@ -884,6 +1037,51 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: '#fff',
     fontWeight: 'bold',
+  },
+  checkbox: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    zIndex: 1,
+  },
+  noteContent: {
+    flex: 1,
+    paddingLeft: 36,
+  },
+  noteContentWithCheckbox: {
+    paddingLeft: 36,
+  },
+  selectionActionBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  selectionActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  selectionActionButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 6,
   },
 });
 

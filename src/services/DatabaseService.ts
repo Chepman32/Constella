@@ -253,11 +253,11 @@ export class DatabaseService {
       setClause.push('positionX = ?, positionY = ?');
       values.push(updates.position.x, updates.position.y);
     }
-    if (updates.folderId !== undefined) {
+    if ('folderId' in updates) {
       const hasFolder = await this.hasFolderSupport();
       if (hasFolder) {
         setClause.push('folderId = ?');
-        values.push(updates.folderId);
+        values.push(updates.folderId || null);
       }
     }
 

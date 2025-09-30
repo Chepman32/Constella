@@ -18,15 +18,6 @@ import HapticFeedback from 'react-native-haptic-feedback';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-  withSequence,
-  Layout,
-  FadeInDown,
-} from 'react-native-reanimated';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLocalization } from '../contexts/LocalizationContext';
 import { databaseService } from '../services/DatabaseService';
@@ -68,10 +59,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
   const [noteToMove, setNoteToMove] = useState<Note | null>(null);
   const windowDimensions = useWindowDimensions();
 
-  const searchOpacity = useSharedValue(0);
-  const fabScale = useSharedValue(1);
-  const pullToSearchOpacity = useSharedValue(0);
-  const pullToSearchTranslateY = useSharedValue(-50);
+  
 
   const CONTEXT_MENU_ACTIONS = [
     { id: 'copy', label: t('notes.actions.copy'), icon: '📋' },
@@ -122,6 +110,12 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
     }, [route.params?.folderId, route.params?.folderName, t])
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      loadNotes();
+    }, [loadNotes])
+  );
+
   useEffect(() => {
     const timeout = setTimeout(() => {
       loadNotes();
@@ -133,7 +127,6 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
   const toggleSearch = () => {
     const newSearchActive = !isSearchActive;
     setIsSearchActive(newSearchActive);
-    searchOpacity.value = withTiming(newSearchActive ? 1 : 0, { duration: 300 });
     if (isSearchActive) {
       setSearchQuery('');
     }
@@ -143,12 +136,8 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
     const { contentOffset } = event.nativeEvent;
     if (contentOffset.y < -50 && !isSearchActive && !isPullingToSearch) {
       setIsPullingToSearch(true);
-      pullToSearchOpacity.value = withTiming(1, { duration: 200 });
-      pullToSearchTranslateY.value = withTiming(0, { duration: 200 });
     } else if (contentOffset.y >= -10 && isPullingToSearch) {
       setIsPullingToSearch(false);
-      pullToSearchOpacity.value = withTiming(0, { duration: 200 });
-      pullToSearchTranslateY.value = withTiming(-50, { duration: 200 });
     }
   };
 
@@ -157,28 +146,14 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
     if (contentOffset.y < -50 && !isSearchActive) {
       toggleSearch();
       setIsPullingToSearch(false);
-      pullToSearchOpacity.value = withTiming(0, { duration: 200 });
-      pullToSearchTranslateY.value = withTiming(-50, { duration: 200 });
     }
   };
 
   const createNewNote = async () => {
     try {
-      fabScale.value = withSequence(
-        withSpring(0.8, { damping: 8 }),
-        withSpring(1, { damping: 8 })
-      );
-
-      const noteId = await databaseService.createNote({
-        title: t('notes.newNote'),
-        content: '',
-        tags: [],
-        lastModified: new Date(),
-        created: new Date(),
-        folderId: selectedFolderId || undefined,
-      });
-
-      navigation.navigate('Editor', { noteId });
+      // Navigate to editor without creating note yet
+      // The editor will create the note when user starts typing
+      navigation.navigate('Editor', { folderId: selectedFolderId || undefined });
     } catch (error) {
       console.error('Failed to create note:', error);
       Alert.alert(t('common.error'), t('errors.createNote'));
@@ -352,23 +327,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
     return { top, left };
   }, [contextMenuState, menuLayout, windowDimensions]);
 
-  const searchAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: searchOpacity.value,
-    transform: [
-      {
-        translateY: withTiming(isSearchActive ? 0 : -50, { duration: 300 }),
-      },
-    ],
-  }));
-
-  const fabAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: fabScale.value }],
-  }));
-
-  const pullToSearchAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: pullToSearchOpacity.value,
-    transform: [{ translateY: pullToSearchTranslateY.value }],
-  }));
+  
 
   const combinedData = useMemo(() => {
     if (selectedFolderId === null) {
@@ -398,11 +357,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
     const preview = extractTextFromMarkdown(item.content);
 
     return (
-      <Animated.View
-        entering={FadeInDown.delay(index * 100)}
-        layout={Layout.springify()}
-      >
-        <Pressable
+      <Pressable
           onPress={() => navigation.navigate('Editor', { noteId: item.id })}
           onLongPress={(event) =>
             openContextMenu(item, {
@@ -455,7 +410,6 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
             </View>
           )}
         </Pressable>
-      </Animated.View>
     );
   };
 
@@ -489,8 +443,8 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       
 
-      <Animated.View
-        style={[styles.searchContainer, searchAnimatedStyle]}
+      <View
+        style={[styles.searchContainer]}
         pointerEvents={isSearchActive ? 'auto' : 'none'}
       >
         <TextInput
@@ -508,16 +462,9 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
           onChangeText={setSearchQuery}
           autoFocus={isSearchActive}
         />
-      </Animated.View>
+      </View>
 
       <View style={styles.listWrapper}>
-        <Animated.View style={[styles.pullToSearchIndicator, pullToSearchAnimatedStyle]}>
-          <Text style={[styles.pullToSearchText, { color: theme.primary }]}>
-            {t('notes.pullToSearch')}
-          </Text>
-          <Text style={[styles.pullToSearchIcon, { color: theme.primary }]}>🔍</Text>
-        </Animated.View>
-
         <FlatList
           data={combinedData}
           renderItem={renderItem}
@@ -552,8 +499,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
 
           {contextMenuState && (
             <View pointerEvents="box-none" style={StyleSheet.absoluteFillObject}>
-              <Animated.View
-                entering={FadeInDown.duration(150)}
+              <View
                 style={[
                   styles.contextMenuContainer,
                   {
@@ -648,13 +594,13 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
                     </Pressable>
                   ))}
                 </View>
-              </Animated.View>
+              </View>
             </View>
           )}
         </View>
       </Modal>
 
-      <Animated.View style={[styles.fab, fabAnimatedStyle]}>
+      <View style={[styles.fab]}>
         <TouchableOpacity
           style={[styles.fabButton, { backgroundColor: theme.primary }]}
           onPress={createNewNote}
@@ -662,7 +608,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
         >
           <Text style={styles.fabIcon}>+</Text>
         </TouchableOpacity>
-      </Animated.View>
+      </View>
 
       {/* Folder Picker Modal */}
       <FolderPicker

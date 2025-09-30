@@ -18,15 +18,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
   withTiming,
-  runOnJS,
 } from 'react-native-reanimated';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLocalization } from '../contexts/LocalizationContext';
 import { databaseService } from '../services/DatabaseService';
 import { Note, Drawing } from '../types';
-import { generateId } from '../utils';
+
 import DrawingCanvas from '../components/DrawingCanvas';
 import { RichEditor, RichToolbar, actions } from 'react-native-pell-rich-editor';
 import Clipboard from '@react-native-clipboard/clipboard';
@@ -43,7 +41,7 @@ const { width, height } = Dimensions.get('window');
 const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }) => {
   const { theme, themeName } = useTheme();
   const { t } = useLocalization();
-  const { noteId } = route.params || {};
+  const { noteId, folderId } = route.params || {};
 
   const [note, setNote] = useState<Note | null>(null);
   const [title, setTitle] = useState('');
@@ -68,55 +66,20 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
     { id: 'delete', label: t('notes.actions.delete'), icon: 'delete-outline', destructive: true },
   ] as const;
 
-  useEffect(() => {
-    if (noteId) {
-      loadNote(noteId);
-    } else {
-      setIsLoading(false);
-    }
-  }, [noteId]);
-
-  useEffect(() => {
-    // Auto-save functionality
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      if (noteId && (title || content)) {
-        saveNote();
+  const saveNote = useCallback(async () => {
+    try {
+      if (noteId) {
+        await databaseService.updateNote(noteId, {
+          title: title,
+          content,
+        });
       }
-    }, 1000);
+    } catch (error) {
+      console.error('Failed to save note:', error);
+    }
+  }, [noteId, title, content]);
 
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [title, content, noteId]);
-
-  useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <TouchableOpacity
-          onPress={() => setShowContextMenu(true)}
-          style={styles.actionButton}
-        >
-          <Text style={[styles.actionIcon, { color: theme.primary }]}>⋯</Text>
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation, theme]);
-
-  useEffect(
-    () =>
-      navigation.addListener('beforeRemove', (e) => {
-        saveNote();
-      }),
-    [navigation, saveNote]
-  );
-
-  const loadNote = async (id: string) => {
+  const loadNote = useCallback(async (id: string) => {
     try {
       const loadedNote = await databaseService.getNote(id);
       if (loadedNote) {
@@ -134,30 +97,72 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const saveNote = useCallback(async () => {
-    try {
-      if (noteId) {
-        await databaseService.updateNote(noteId, {
-          title: title || 'Untitled',
-          content,
-        });
-      } else {
-        // Create new note if it doesn't exist
+  useEffect(() => {
+    const initializeNewNote = async () => {
+      try {
         const newNoteId = await databaseService.createNote({
-          title: title || 'Untitled',
-          content,
+          title: '',
+          content: '',
           tags: [],
           lastModified: new Date(),
           created: new Date(),
+          folderId: folderId || undefined,
         });
-        navigation.setParams({ noteId: newNoteId });
+        navigation.setParams({ noteId: newNoteId, folderId: undefined });
+        loadNote(newNoteId);
+      } catch (error) {
+        console.error('Failed to initialize new note:', error);
+        Alert.alert('Error', 'Failed to create a new note.');
+        navigation.goBack();
       }
-    } catch (error) {
-      console.error('Failed to save note:', error);
+    };
+
+    if (noteId) {
+      loadNote(noteId);
+    } else {
+      initializeNewNote();
     }
-  }, [noteId, title, content, navigation]);
+  }, [noteId, folderId, navigation, loadNote]);
+
+  useEffect(() => {
+    // Auto-save functionality
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      saveNote();
+    }, 1000);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [title, content, saveNote]);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => setShowContextMenu(true)}
+          style={styles.actionButton}
+        >
+          <Text style={[styles.actionIcon, { color: theme.primary }]}>⋯</Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, theme]);
+
+  useEffect(
+    () =>
+      navigation.addListener('beforeRemove', () => {
+        saveNote();
+      }),
+    [navigation, saveNote]
+  );
 
   const toggleFocusMode = () => {
     setIsFocusMode(!isFocusMode);
@@ -179,8 +184,7 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
     setDrawings((prev) => [...prev, drawing]);
     setIsDrawingMode(false);
 
-    // Insert drawing reference in text
-    insertText(`\n[Drawing: ${drawing.id}]\n`, 0);
+    
   };
 
   const handleDrawingCancel = () => {

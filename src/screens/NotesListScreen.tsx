@@ -60,6 +60,10 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
   const windowDimensions = useWindowDimensions();
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set());
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'gallery'>('list');
+  const [sortBy, setSortBy] = useState<'date' | 'name' | 'lastEdited'>('lastEdited');
+  const [groupByDate, setGroupByDate] = useState(false);
 
   
 
@@ -258,14 +262,9 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
               <Text style={[styles.actionIcon, { color: theme.primary, fontSize: 14 }]}>Select All</Text>
             </TouchableOpacity>
           ) : (
-            <>
-              <TouchableOpacity onPress={() => setShowFolderPicker(true)} style={styles.actionButton}>
-                <Text style={[styles.actionIcon, { color: theme.primary }]}>📁</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={toggleSearch} style={styles.actionButton}>
-                <Text style={[styles.actionIcon, { color: theme.primary }]}>🔍</Text>
-              </TouchableOpacity>
-            </>
+            <TouchableOpacity onPress={() => setShowOptionsMenu(true)} style={styles.actionButton}>
+              <Icon name="dots-vertical" size={24} color={theme.primary} />
+            </TouchableOpacity>
           )}
         </View>
       ),
@@ -750,6 +749,137 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
         allowCreateFolder={false}
       />
 
+      {/* Options Menu Modal */}
+      <Modal
+        visible={showOptionsMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowOptionsMenu(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowOptionsMenu(false)}>
+          <View style={styles.optionsMenuOverlay}>
+            <View
+              style={[
+                styles.optionsMenuContainer,
+                {
+                  backgroundColor: theme.surface,
+                  borderColor: theme.border,
+                },
+              ]}
+            >
+              <TouchableOpacity
+                style={styles.optionsMenuItem}
+                onPress={() => {
+                  setViewMode(viewMode === 'list' ? 'gallery' : 'list');
+                  HapticFeedback.trigger('impactLight');
+                }}
+              >
+                <Icon
+                  name={viewMode === 'list' ? 'view-grid' : 'view-list'}
+                  size={20}
+                  color={theme.text}
+                />
+                <Text style={[styles.optionsMenuItemText, { color: theme.text }]}>
+                  {viewMode === 'list' ? 'View as Gallery' : 'View as List'}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={[styles.optionsMenuDivider, { backgroundColor: theme.border }]} />
+
+              <View style={styles.optionsMenuSection}>
+                <Text style={[styles.optionsMenuSectionTitle, { color: theme.textSecondary }]}>
+                  Sort by
+                </Text>
+                <TouchableOpacity
+                  style={styles.optionsMenuItem}
+                  onPress={() => {
+                    setSortBy('date');
+                    HapticFeedback.trigger('impactLight');
+                  }}
+                >
+                  <Icon
+                    name={sortBy === 'date' ? 'radiobox-marked' : 'radiobox-blank'}
+                    size={20}
+                    color={sortBy === 'date' ? theme.primary : theme.text}
+                  />
+                  <Text style={[styles.optionsMenuItemText, { color: theme.text }]}>
+                    Date Created
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.optionsMenuItem}
+                  onPress={() => {
+                    setSortBy('name');
+                    HapticFeedback.trigger('impactLight');
+                  }}
+                >
+                  <Icon
+                    name={sortBy === 'name' ? 'radiobox-marked' : 'radiobox-blank'}
+                    size={20}
+                    color={sortBy === 'name' ? theme.primary : theme.text}
+                  />
+                  <Text style={[styles.optionsMenuItemText, { color: theme.text }]}>
+                    Name
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.optionsMenuItem}
+                  onPress={() => {
+                    setSortBy('lastEdited');
+                    HapticFeedback.trigger('impactLight');
+                  }}
+                >
+                  <Icon
+                    name={sortBy === 'lastEdited' ? 'radiobox-marked' : 'radiobox-blank'}
+                    size={20}
+                    color={sortBy === 'lastEdited' ? theme.primary : theme.text}
+                  />
+                  <Text style={[styles.optionsMenuItemText, { color: theme.text }]}>
+                    Last Edited
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={[styles.optionsMenuDivider, { backgroundColor: theme.border }]} />
+
+              <TouchableOpacity
+                style={styles.optionsMenuItem}
+                onPress={() => {
+                  setGroupByDate(!groupByDate);
+                  HapticFeedback.trigger('impactLight');
+                }}
+              >
+                <Icon
+                  name={groupByDate ? 'checkbox-marked' : 'checkbox-blank-outline'}
+                  size={20}
+                  color={groupByDate ? theme.primary : theme.text}
+                />
+                <Text style={[styles.optionsMenuItemText, { color: theme.text }]}>
+                  Group by Date
+                </Text>
+              </TouchableOpacity>
+
+              <View style={[styles.optionsMenuDivider, { backgroundColor: theme.border }]} />
+
+              <TouchableOpacity
+                style={styles.optionsMenuItem}
+                onPress={() => {
+                  setShowOptionsMenu(false);
+                  Alert.alert('View Attachments', 'Coming soon');
+                }}
+              >
+                <Icon name="paperclip" size={20} color={theme.text} />
+                <Text style={[styles.optionsMenuItemText, { color: theme.text }]}>
+                  View Attachments
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
       {/* Selection Mode Action Bar */}
       {isSelectionMode && selectedNoteIds.size > 0 && (
         <View style={[styles.selectionActionBar, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
@@ -1082,6 +1212,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     marginLeft: 6,
+  },
+  optionsMenuOverlay: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingTop: 60,
+    paddingRight: 16,
+  },
+  optionsMenuContainer: {
+    minWidth: 220,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+    paddingVertical: 8,
+  },
+  optionsMenuSection: {
+    paddingVertical: 4,
+  },
+  optionsMenuSectionTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    textTransform: 'uppercase',
+  },
+  optionsMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  optionsMenuItemText: {
+    fontSize: 15,
+    marginLeft: 12,
+  },
+  optionsMenuDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginVertical: 4,
   },
 });
 

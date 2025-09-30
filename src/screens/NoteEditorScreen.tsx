@@ -13,6 +13,7 @@ import {
   Modal,
   TouchableWithoutFeedback,
   Share,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
@@ -51,6 +52,7 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
   const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [drawings, setDrawings] = useState<Drawing[]>([]);
   const [showContextMenu, setShowContextMenu] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   const titleRef = useRef<TextInput>(null);
   const richEditorRef = useRef<RichEditor>(null);
@@ -163,6 +165,26 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
       }),
     [navigation, saveNote]
   );
+
+  useEffect(() => {
+    const keyboardWillShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        setIsKeyboardVisible(true);
+      }
+    );
+    const keyboardWillHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setIsKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
+    };
+  }, []);
 
   const toggleFocusMode = () => {
     setIsFocusMode(!isFocusMode);
@@ -335,41 +357,81 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
           />
         </ScrollView>
 
-        <Animated.View style={[styles.toolbar, toolbarAnimatedStyle]}>
-          <RichToolbar
-            editor={richEditorRef}
-            style={[styles.richToolbar, { backgroundColor: theme.surface }]}
-            iconTint={theme.text}
-            selectedIconTint={theme.primary}
-            selectedButtonStyle={{ backgroundColor: theme.primary + '20' }}
-            actions={[
-              actions.setBold,
-              actions.setItalic,
-              actions.heading1,
-              actions.heading2,
-              actions.heading3,
-              actions.insertBulletsList,
-              actions.insertOrderedList,
-              actions.blockquote,
-              'insertDrawing'
-            ]}
-            iconMap={{
-              [actions.setBold]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>B</Text>,
-              [actions.setItalic]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor, fontStyle: 'italic' }]}>I</Text>,
-              [actions.heading1]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>H1</Text>,
-              [actions.heading2]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>H2</Text>,
-              [actions.heading3]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>H3</Text>,
-              [actions.insertBulletsList]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>•</Text>,
-              [actions.insertOrderedList]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>1.</Text>,
-              [actions.blockquote]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>❝</Text>,
-              insertDrawing: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>✏️</Text>,
-            }}
-            onPressAddImage={() => {
-              // Handle image insertion if needed
-            }}
-            insertDrawing={() => setIsDrawingMode(true)}
-          />
-        </Animated.View>
+        {isKeyboardVisible && !isFocusMode && (
+          <Animated.View style={[styles.toolbar, toolbarAnimatedStyle]}>
+            <RichToolbar
+              editor={richEditorRef}
+              style={[styles.richToolbar, { backgroundColor: theme.surface }]}
+              iconTint={theme.text}
+              selectedIconTint={theme.primary}
+              selectedButtonStyle={{ backgroundColor: theme.primary + '20' }}
+              actions={[
+                actions.setBold,
+                actions.setItalic,
+                actions.heading1,
+                actions.heading2,
+                actions.heading3,
+                actions.insertBulletsList,
+                actions.insertOrderedList,
+                actions.blockquote,
+              ]}
+              iconMap={{
+                [actions.setBold]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>B</Text>,
+                [actions.setItalic]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor, fontStyle: 'italic' }]}>I</Text>,
+                [actions.heading1]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>H1</Text>,
+                [actions.heading2]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>H2</Text>,
+                [actions.heading3]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>H3</Text>,
+                [actions.insertBulletsList]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>•</Text>,
+                [actions.insertOrderedList]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>1.</Text>,
+                [actions.blockquote]: ({ tintColor }: any) => <Text style={[styles.toolbarIcon, { color: tintColor }]}>❝</Text>,
+              }}
+              onPressAddImage={() => {
+                // Handle image insertion if needed
+              }}
+            />
+          </Animated.View>
+        )}
+
+        {!isKeyboardVisible && !isFocusMode && (
+          <View style={[styles.bottomMenu, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
+            <TouchableOpacity
+              style={styles.bottomMenuButton}
+              onPress={() => {
+                // Handle checklist
+                Alert.alert('Checklist', 'Coming soon');
+              }}
+            >
+              <Icon name="checkbox-marked-outline" size={24} color={theme.primary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.bottomMenuButton}
+              onPress={() => {
+                // Handle attachment
+                Alert.alert('Attachment', 'Coming soon');
+              }}
+            >
+              <Icon name="paperclip" size={24} color={theme.primary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.bottomMenuButton}
+              onPress={() => setIsDrawingMode(true)}
+            >
+              <Icon name="draw" size={24} color={theme.primary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.bottomMenuButton}
+              onPress={() => {
+                // Handle note icon
+                Alert.alert('Note', 'Coming soon');
+              }}
+            >
+              <Icon name="note-edit-outline" size={24} color={theme.primary} />
+            </TouchableOpacity>
+          </View>
+        )}
       </KeyboardAvoidingView>
       {isDrawingMode && (
         <DrawingCanvas
@@ -539,6 +601,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     minWidth: 24,
+  },
+  bottomMenu: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderTopWidth: 1,
+  },
+  bottomMenuButton: {
+    padding: 12,
+    borderRadius: 8,
   },
 });
 

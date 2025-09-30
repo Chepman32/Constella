@@ -357,12 +357,62 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
 
   
 
+  const sortedNotes = useMemo(() => {
+    let sorted = [...notes];
+
+    switch (sortBy) {
+      case 'date':
+        sorted.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
+        break;
+      case 'name':
+        sorted.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+        break;
+      case 'lastEdited':
+      default:
+        sorted.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
+        break;
+    }
+
+    return sorted;
+  }, [notes, sortBy]);
+
+  const groupedNotes = useMemo(() => {
+    if (!groupByDate) return null;
+
+    const groups: { [key: string]: Note[] } = {};
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    sortedNotes.forEach(note => {
+      const noteDate = new Date(note.lastModified);
+      noteDate.setHours(0, 0, 0, 0);
+
+      let groupKey: string;
+      if (noteDate.getTime() === today.getTime()) {
+        groupKey = 'Today';
+      } else if (noteDate.getTime() === yesterday.getTime()) {
+        groupKey = 'Yesterday';
+      } else {
+        groupKey = noteDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      }
+
+      if (!groups[groupKey]) {
+        groups[groupKey] = [];
+      }
+      groups[groupKey].push(note);
+    });
+
+    return groups;
+  }, [sortedNotes, groupByDate]);
+
   const combinedData = useMemo(() => {
     if (selectedFolderId === null) {
-      return [...folders, ...notes];
+      return [...folders, ...sortedNotes];
     }
-    return notes;
-  }, [notes, folders, selectedFolderId]);
+    return sortedNotes;
+  }, [sortedNotes, folders, selectedFolderId]);
 
   const renderFolderItem = ({ item }: { item: Folder }) => (
     <Pressable
@@ -476,7 +526,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
           onLongPress={(event) => handleNoteLongPress(item, event)}
           delayLongPress={250}
           style={({ pressed }) => [
-            styles.noteCard,
+            viewMode === 'gallery' ? styles.galleryNoteCard : styles.noteCard,
             {
               backgroundColor: theme.surface,
               borderColor: isSelected ? theme.primary : theme.border,
@@ -494,21 +544,29 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
           )}
           <View style={styles.noteContent}>
             <View style={styles.noteHeader}>
-              <Text style={[styles.noteTitle, { color: theme.text }]}>
+              <Text
+                style={[styles.noteTitle, { color: theme.text }]}
+                numberOfLines={viewMode === 'gallery' ? 2 : undefined}
+              >
                 {item.title || t('notes.untitled')}
               </Text>
-              <Text style={[styles.noteDate, { color: theme.textSecondary }]}>
-                {formatDate(item.lastModified)}
-              </Text>
+              {viewMode === 'list' && (
+                <Text style={[styles.noteDate, { color: theme.textSecondary }]}>
+                  {formatDate(item.lastModified)}
+                </Text>
+              )}
             </View>
 
           {preview && (
-            <Text style={[styles.notePreview, { color: theme.textSecondary }]}>
-              {truncateText(preview, 120)}
+            <Text
+              style={[styles.notePreview, { color: theme.textSecondary }]}
+              numberOfLines={viewMode === 'gallery' ? 4 : undefined}
+            >
+              {truncateText(preview, viewMode === 'gallery' ? 80 : 120)}
             </Text>
           )}
 
-            {item.tags.length > 0 && (
+            {viewMode === 'list' && item.tags.length > 0 && (
               <View style={styles.tagsContainer}>
                 {item.tags.slice(0, 3).map((tag, tagIndex) => (
                   <View
@@ -584,25 +642,92 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
       </View>
 
       <View style={styles.listWrapper}>
-        <FlatList
-          data={combinedData}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={[
-            styles.listContainer,
-            combinedData.length === 0 && styles.emptyListContainer,
-          ]}
-          ListEmptyComponent={!isLoading ? EmptyState : null}
-          showsVerticalScrollIndicator={false}
-          onScroll={handleScrollPullDown}
-          onScrollEndDrag={handleScrollEndDrag}
-          scrollEventThrottle={16}
-          onScrollBeginDrag={() => {
-            if (isSearchActive) {
-              toggleSearch();
-            }
-          }}
-        />
+        {viewMode === 'gallery' ? (
+          <>
+            {selectedFolderId === null && folders.length > 0 && (
+              <View style={styles.foldersSection}>
+                {folders.map((folder) => renderFolderItem({ item: folder }))}
+              </View>
+            )}
+            <FlatList
+              data={sortedNotes}
+              renderItem={({ item, index }) => renderNoteItem({ item, index })}
+              keyExtractor={(item) => item.id}
+              numColumns={2}
+              key="gallery"
+              columnWrapperStyle={styles.galleryRow}
+              contentContainerStyle={[
+                styles.galleryContainer,
+                sortedNotes.length === 0 && styles.emptyListContainer,
+              ]}
+              ListEmptyComponent={!isLoading ? EmptyState : null}
+              showsVerticalScrollIndicator={false}
+              onScroll={handleScrollPullDown}
+              onScrollEndDrag={handleScrollEndDrag}
+              scrollEventThrottle={16}
+              onScrollBeginDrag={() => {
+                if (isSearchActive) {
+                  toggleSearch();
+                }
+              }}
+            />
+          </>
+        ) : groupByDate && groupedNotes ? (
+          <FlatList
+            data={Object.keys(groupedNotes)}
+            renderItem={({ item: groupKey }) => (
+              <View>
+                <View style={styles.dateGroupHeader}>
+                  <Text style={[styles.dateGroupHeaderText, { color: theme.textSecondary }]}>
+                    {groupKey}
+                  </Text>
+                </View>
+                {groupedNotes[groupKey].map((note, index) => (
+                  <View key={note.id}>
+                    {renderNoteItem({ item: note, index })}
+                  </View>
+                ))}
+              </View>
+            )}
+            keyExtractor={(item) => item}
+            key="grouped"
+            contentContainerStyle={[
+              styles.listContainer,
+              Object.keys(groupedNotes).length === 0 && styles.emptyListContainer,
+            ]}
+            ListEmptyComponent={!isLoading ? EmptyState : null}
+            showsVerticalScrollIndicator={false}
+            onScroll={handleScrollPullDown}
+            onScrollEndDrag={handleScrollEndDrag}
+            scrollEventThrottle={16}
+            onScrollBeginDrag={() => {
+              if (isSearchActive) {
+                toggleSearch();
+              }
+            }}
+          />
+        ) : (
+          <FlatList
+            data={combinedData}
+            renderItem={renderItem}
+            keyExtractor={(item) => item.id}
+            key="list"
+            contentContainerStyle={[
+              styles.listContainer,
+              combinedData.length === 0 && styles.emptyListContainer,
+            ]}
+            ListEmptyComponent={!isLoading ? EmptyState : null}
+            showsVerticalScrollIndicator={false}
+            onScroll={handleScrollPullDown}
+            onScrollEndDrag={handleScrollEndDrag}
+            scrollEventThrottle={16}
+            onScrollBeginDrag={() => {
+              if (isSearchActive) {
+                toggleSearch();
+              }
+            }}
+          />
+        )}
       </View>
 
       <Modal
@@ -867,7 +992,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
                 style={styles.optionsMenuItem}
                 onPress={() => {
                   setShowOptionsMenu(false);
-                  Alert.alert('View Attachments', 'Coming soon');
+                  Alert.alert(t('common.comingSoon'), 'Attachments view will be available soon');
                 }}
               >
                 <Icon name="paperclip" size={20} color={theme.text} />
@@ -1255,6 +1380,44 @@ const styles = StyleSheet.create({
   optionsMenuDivider: {
     height: StyleSheet.hairlineWidth,
     marginVertical: 4,
+  },
+  dateGroupHeader: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    paddingTop: 20,
+  },
+  dateGroupHeaderText: {
+    fontSize: 14,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  galleryContainer: {
+    paddingHorizontal: 16,
+  },
+  galleryRow: {
+    justifyContent: 'space-between',
+  },
+  galleryNoteCard: {
+    flex: 1,
+    maxWidth: '48%',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+    minHeight: 160,
+  },
+  foldersSection: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
   },
 });
 

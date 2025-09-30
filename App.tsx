@@ -15,6 +15,7 @@ import SpatialCanvasScreen from './src/screens/SpatialCanvasScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import FavoritesScreen from './src/screens/FavoritesScreen';
 import FolderManagementScreen from './src/screens/FolderManagementScreen';
+import AttachmentsScreen from './src/screens/AttachmentsScreen';
 import CustomDrawerContent from './src/components/CustomDrawerContent';
 
 const Stack = createStackNavigator();
@@ -75,6 +76,7 @@ const App: React.FC = () => {
           })}
         />
         <Stack.Screen name="Editor" component={NoteEditorScreen} />
+        <Stack.Screen name="Attachments" component={AttachmentsScreen} />
       </Stack.Navigator>
     );
   };

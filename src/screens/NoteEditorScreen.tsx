@@ -14,6 +14,7 @@ import {
   TouchableWithoutFeedback,
   Share,
   Keyboard,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
@@ -55,6 +56,7 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
   const [drawings, setDrawings] = useState<Drawing[]>([]);
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [lastInsertedImage, setLastInsertedImage] = useState<string | null>(null);
 
   const titleRef = useRef<TextInput>(null);
   const richEditorRef = useRef<RichEditor>(null);
@@ -208,15 +210,54 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
     setDrawings((prev) => [...prev, drawing]);
     setIsDrawingMode(false);
 
-    // Insert the drawing as an image in the editor
-    if (drawing.thumbnail) {
-      richEditorRef.current?.insertImage(drawing.thumbnail, 'width: 100%; max-width: 500px;');
+    if (!drawing.thumbnail) return;
+
+    // If there was a background image, we need to replace it with the annotated version
+    if (lastInsertedImage) {
+      // Remove the last inserted image from content
+      let updatedContent = content;
+
+      // Find and remove the last occurrence of the image
+      const imgRegex = new RegExp(
+        `<img[^>]*src="${lastInsertedImage.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*>`,
+        'g'
+      );
+
+      // Get all matches
+      const matches = updatedContent.match(imgRegex);
+      if (matches && matches.length > 0) {
+        // Remove the last match
+        const lastMatch = matches[matches.length - 1];
+        const lastIndex = updatedContent.lastIndexOf(lastMatch);
+        updatedContent =
+          updatedContent.substring(0, lastIndex) +
+          updatedContent.substring(lastIndex + lastMatch.length);
+      }
+
+      // Add the annotated image
+      updatedContent += `<img src="${drawing.thumbnail}" style="max-width: 100%; height: auto; border-radius: 8px; margin: 8px 0;" />`;
+
+      // Update the content
+      setContent(updatedContent);
+      richEditorRef.current?.setContentHTML(updatedContent);
+
+      HapticFeedback.trigger('impactLight');
+
+      // Clear the last inserted image reference
+      setLastInsertedImage(null);
+    } else {
+      // No background image, just insert the drawing
+      richEditorRef.current?.insertHTML(
+        `<img src="${drawing.thumbnail}" style="max-width: 100%; height: auto; border-radius: 8px; margin: 8px 0;" />`
+      );
       HapticFeedback.trigger('impactLight');
     }
   };
 
   const handleDrawingCancel = () => {
     setIsDrawingMode(false);
+    // Clear the last inserted image reference when canceling
+    setLastInsertedImage(null);
   };
 
   
@@ -482,27 +523,49 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
             <TouchableOpacity
               style={styles.bottomMenuButton}
               onPress={async () => {
-                try {
-                  Alert.alert(
-                    'Add Attachment',
-                    'Choose attachment type',
-                    [
-                      {
-                        text: 'Image',
-                        onPress: async () => {
+                Alert.alert(
+                  'Add Attachment',
+                  'Choose attachment type',
+                  [
+                    {
+                      text: 'Image',
+                      onPress: async () => {
+                        try {
                           const result = await launchImageLibrary({
                             mediaType: 'photo',
                             quality: 0.8,
+                            includeBase64: true,
                           });
-                          if (result.assets && result.assets[0].uri) {
-                            richEditorRef.current?.insertImage(result.assets[0].uri);
+
+                          if (!result.didCancel && result.assets && result.assets[0]) {
+                            const asset = result.assets[0];
+                            let imageUri = asset.uri;
+
+                            // If we have base64, use data URI for better compatibility
+                            if (asset.base64) {
+                              const mimeType = asset.type || 'image/jpeg';
+                              imageUri = `data:${mimeType};base64,${asset.base64}`;
+                            }
+
+                            // Save the image URI for drawing canvas
+                            setLastInsertedImage(imageUri || asset.uri || null);
+
+                            // Insert image with proper styling
+                            richEditorRef.current?.insertHTML(
+                              `<img src="${imageUri}" style="max-width: 100%; height: auto; border-radius: 8px; margin: 8px 0;" />`
+                            );
                             HapticFeedback.trigger('impactLight');
                           }
-                        },
+                        } catch (error) {
+                          console.error('Image picker error:', error);
+                          Alert.alert('Error', 'Failed to select image');
+                        }
                       },
-                      {
-                        text: 'Document',
-                        onPress: async () => {
+                    },
+                    {
+                      text: 'Document',
+                      onPress: async () => {
+                        try {
                           const result = await DocumentPicker.pick({
                             type: [DocumentPicker.types.pdf, DocumentPicker.types.doc, DocumentPicker.types.docx],
                           });
@@ -513,19 +576,20 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
                             );
                             HapticFeedback.trigger('impactLight');
                           }
-                        },
+                        } catch (err) {
+                          if (!DocumentPicker.isCancel(err)) {
+                            console.error('Document picker error:', err);
+                            Alert.alert('Error', 'Failed to select document');
+                          }
+                        }
                       },
-                      {
-                        text: 'Cancel',
-                        style: 'cancel',
-                      },
-                    ]
-                  );
-                } catch (err) {
-                  if (!DocumentPicker.isCancel(err)) {
-                    console.error('Document picker error:', err);
-                  }
-                }
+                    },
+                    {
+                      text: 'Cancel',
+                      style: 'cancel',
+                    },
+                  ]
+                );
               }}
             >
               <Icon name="paperclip" size={24} color={theme.primary} />
@@ -569,6 +633,7 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
           <DrawingCanvas
             onDrawingComplete={handleDrawingComplete}
             onClose={handleDrawingCancel}
+            backgroundImage={lastInsertedImage || undefined}
           />
         </Modal>
       )}
@@ -608,11 +673,16 @@ const NoteEditorScreen: React.FC<NoteEditorScreenProps> = ({ navigation, route }
                       action.destructive && { borderColor: theme.border }
                     ]}
                   >
-                    <Icon name={action.icon} size={22} style={styles.contextMenuIcon} color={action.destructive ? '#d62d20' : theme.text} />
+                    <Icon
+                      name={action.icon}
+                      size={22}
+                      style={styles.contextMenuIcon}
+                      color={action.destructive ? '#d62d20' : theme.text}
+                    />
                     <Text
                       style={[
                         styles.contextMenuActionLabel,
-                        { color: action.destructive ? '#d62d20' : theme.text },
+                        action.destructive ? styles.destructiveText : { color: theme.text },
                       ]}
                     >
                       {action.label}
@@ -717,6 +787,9 @@ const styles = StyleSheet.create({
   contextMenuActionLabel: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  destructiveText: {
+    color: '#d62d20',
   },
   richEditor: {
     flex: 1,

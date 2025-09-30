@@ -992,7 +992,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
                 style={styles.optionsMenuItem}
                 onPress={() => {
                   setShowOptionsMenu(false);
-                  Alert.alert(t('common.comingSoon'), 'Attachments view will be available soon');
+                  navigation.navigate('Attachments');
                 }}
               >
                 <Icon name="paperclip" size={20} color={theme.text} />

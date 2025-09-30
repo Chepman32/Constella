@@ -1,17 +1,21 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text, Image, Dimensions } from 'react-native';
 import { Canvas, Path, Skia, useCanvasRef } from '@shopify/react-native-skia';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import ViewShot from 'react-native-view-shot';
 import { useTheme } from '../contexts/ThemeContext';
 import { Stroke, Point, Drawing } from '../types';
 import { generateId } from '../utils';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface DrawingCanvasProps {
   onDrawingComplete: (drawing: Drawing) => void;
   onClose: () => void;
   existingDrawing?: Drawing;
+  backgroundImage?: string;
 }
 
 type DrawingTool = 'pen' | 'highlighter' | 'eraser';
@@ -20,9 +24,11 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   onDrawingComplete,
   onClose,
   existingDrawing,
+  backgroundImage,
 }) => {
   const { theme } = useTheme();
   const canvasRef = useCanvasRef();
+  const viewShotRef = useRef<ViewShot>(null);
 
   const [strokes, setStrokes] = useState<Stroke[]>(existingDrawing?.strokes || []);
   const [currentStroke, setCurrentStroke] = useState<Point[]>([]);
@@ -157,27 +163,36 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   };
 
   const handleSave = async () => {
-    if (strokes.length === 0) {
+    if (strokes.length === 0 && !backgroundImage) {
       onClose();
       return;
     }
 
-    // Create a thumbnail by capturing the canvas
-    const snapshot = canvasRef.current?.makeImageSnapshot();
-    let thumbnail: string | undefined;
+    try {
+      // Capture the entire view including background image and drawings
+      const uri = await viewShotRef.current?.capture?.();
+      let thumbnail: string | undefined;
 
-    if (snapshot) {
-      const image = snapshot.encodeToBase64();
-      thumbnail = `data:image/png;base64,${image}`;
+      if (uri) {
+        // Convert to base64 data URI
+        thumbnail = `data:image/png;base64,${uri}`;
+      }
+
+      const drawing: Drawing = {
+        id: existingDrawing?.id || generateId(),
+        strokes,
+        thumbnail,
+      };
+
+      onDrawingComplete(drawing);
+    } catch (error) {
+      console.error('Failed to capture view:', error);
+      onDrawingComplete({
+        id: existingDrawing?.id || generateId(),
+        strokes,
+        thumbnail: undefined,
+      });
     }
-
-    const drawing: Drawing = {
-      id: existingDrawing?.id || generateId(),
-      strokes,
-      thumbnail,
-    };
-
-    onDrawingComplete(drawing);
   };
 
   const handleColorChange = (color: string) => {
@@ -223,29 +238,46 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         </TouchableOpacity>
       </View>
 
-      <GestureDetector gesture={drawingGesture}>
-        <Canvas
-          ref={canvasRef}
-          style={styles.canvas}
-        >
-        {paths.map((pathData) => {
-          if (!pathData) return null;
+      <ViewShot
+        ref={viewShotRef}
+        options={{
+          format: 'png',
+          quality: 0.9,
+          result: 'base64',
+        }}
+        style={styles.canvasContainer}
+      >
+        {backgroundImage && (
+          <Image
+            source={{ uri: backgroundImage }}
+            style={styles.backgroundImage}
+            resizeMode="contain"
+          />
+        )}
+        <GestureDetector gesture={drawingGesture}>
+          <Canvas
+            ref={canvasRef}
+            style={styles.canvasOverlay}
+          >
+            {paths.map((pathData) => {
+              if (!pathData) return null;
 
-          return (
-            <Path
-              key={pathData.key}
-              path={pathData.path}
-              style="stroke"
-              strokeWidth={pathData.width}
-              strokeCap="round"
-              strokeJoin="round"
-              color={pathData.color}
-              opacity={pathData.tool === 'highlighter' ? 0.5 : 1}
-            />
-          );
-        })}
-        </Canvas>
-      </GestureDetector>
+              return (
+                <Path
+                  key={pathData.key}
+                  path={pathData.path}
+                  style="stroke"
+                  strokeWidth={pathData.width}
+                  strokeCap="round"
+                  strokeJoin="round"
+                  color={pathData.color}
+                  opacity={pathData.tool === 'highlighter' ? 0.5 : 1}
+                />
+              );
+            })}
+          </Canvas>
+        </GestureDetector>
+      </ViewShot>
 
       <Animated.View style={[styles.toolbar, toolbarAnimatedStyle, { backgroundColor: theme.surface }]}>
         <View style={styles.toolSection}>
@@ -334,6 +366,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   canvas: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  canvasContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  backgroundImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  canvasOverlay: {
     flex: 1,
     backgroundColor: 'transparent',
   },

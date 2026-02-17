@@ -77,7 +77,12 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
         layout={Layout.springify()}
       >
         <Pressable
-          onPress={() => navigation.navigate('Editor', { noteId: item.id })}
+          onPress={() =>
+            navigation.navigate('MainStack', {
+              screen: 'Editor',
+              params: { noteId: item.id },
+            })
+          }
           style={({ pressed }) => [
             styles.noteCard,
             {

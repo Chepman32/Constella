@@ -90,6 +90,16 @@ const SpatialCanvasScreen: React.FC<SpatialCanvasScreenProps> = ({ navigation })
   const noteNodesRef = useRef<NoteNode[]>([]);
   const windowDimensions = useWindowDimensions();
 
+  const openEditor = useCallback(
+    (noteId: string) => {
+      navigation.navigate('MainStack', {
+        screen: 'Editor',
+        params: { noteId },
+      });
+    },
+    [navigation]
+  );
+
   useEffect(() => {
     noteNodesRef.current = noteNodes;
   }, [noteNodes]);
@@ -399,7 +409,7 @@ const SpatialCanvasScreen: React.FC<SpatialCanvasScreenProps> = ({ navigation })
 
       // Open note after animation
       setTimeout(() => {
-        navigation.navigate('Editor', { noteId: nodeId });
+        openEditor(nodeId);
       }, 500);
     }
   };
@@ -421,7 +431,7 @@ const SpatialCanvasScreen: React.FC<SpatialCanvasScreenProps> = ({ navigation })
       await loadNotes();
 
       // Navigate to editor
-      navigation.navigate('Editor', { noteId });
+      openEditor(noteId);
     } catch (error) {
       console.error('Failed to create note:', error);
     }

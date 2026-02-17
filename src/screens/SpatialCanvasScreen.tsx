@@ -37,7 +37,7 @@ const NOTE_NODE_WIDTH = 200;
 const NOTE_NODE_HEIGHT = 150;
 
 interface CanvasContextMenuAction {
-  id: 'layer-up' | 'layer-down' | 'pin' | 'remove';
+  id: 'layer-up' | 'layer-down' | 'pin' | 'link' | 'remove';
   label: string;
   icon: string;
   destructive?: boolean;
@@ -47,6 +47,7 @@ const CANVAS_CONTEXT_MENU_ACTIONS: readonly CanvasContextMenuAction[] = [
   { id: 'layer-up', label: 'Layer', icon: '⬆️' },
   { id: 'layer-down', label: 'Layer down', icon: '⬇️' },
   { id: 'pin', label: 'Pin', icon: '📌' },
+  { id: 'link', label: 'Link a Note', icon: '🔗' },
   { id: 'remove', label: 'Remove from canvas', icon: '🗑️', destructive: true },
 ];
 
@@ -68,13 +69,30 @@ interface NoteNode {
   isPinned: boolean;
 }
 
+interface CanvasLink {
+  id: string;
+  fromId: string;
+  toId: string;
+}
+
+interface CanvasLinkSegment {
+  id: string;
+  left: number;
+  top: number;
+  length: number;
+  angle: string;
+}
+
 const SpatialCanvasScreen: React.FC<SpatialCanvasScreenProps> = ({ navigation }) => {
   const { theme, themeName } = useTheme();
 
   const [notes, setNotes] = useState<Note[]>([]);
   const [noteNodes, setNoteNodes] = useState<NoteNode[]>([]);
+  const [noteLinks, setNoteLinks] = useState<CanvasLink[]>([]);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [isNotePickerVisible, setNotePickerVisible] = useState(false);
+  const [isLinkPickerVisible, setLinkPickerVisible] = useState(false);
+  const [linkSourceNodeId, setLinkSourceNodeId] = useState<string | null>(null);
   const [contextMenuState, setContextMenuState] = useState<CanvasContextMenuState | null>(null);
   const [menuLayout, setMenuLayout] = useState({ width: 0, height: 0 });
 
@@ -183,6 +201,100 @@ const SpatialCanvasScreen: React.FC<SpatialCanvasScreenProps> = ({ navigation })
     [notes, noteNodes]
   );
 
+  const createLinkId = useCallback((firstId: string, secondId: string) => {
+    return [firstId, secondId].sort().join('::');
+  }, []);
+
+  const closeLinkPicker = useCallback(() => {
+    setLinkPickerVisible(false);
+    setLinkSourceNodeId(null);
+  }, []);
+
+  const linkSourceNode = useMemo(
+    () => noteNodes.find((node) => node.id === linkSourceNodeId) ?? null,
+    [noteNodes, linkSourceNodeId]
+  );
+
+  const activeNodeIds = useMemo(() => {
+    const ids = new Set<string>();
+    noteNodes.forEach((node) => ids.add(node.id));
+    return ids;
+  }, [noteNodes]);
+
+  const visibleNoteLinks = useMemo(
+    () =>
+      noteLinks.filter(
+        (link) => activeNodeIds.has(link.fromId) && activeNodeIds.has(link.toId)
+      ),
+    [activeNodeIds, noteLinks]
+  );
+
+  const linkTargetNodes = useMemo(() => {
+    if (!linkSourceNodeId) {
+      return [];
+    }
+    return noteNodes.filter((node) => node.id !== linkSourceNodeId);
+  }, [noteNodes, linkSourceNodeId]);
+
+  const linkedTargetIds = useMemo(() => {
+    if (!linkSourceNodeId) {
+      return new Set<string>();
+    }
+
+    const ids = new Set<string>();
+    visibleNoteLinks.forEach((link) => {
+      if (link.fromId === linkSourceNodeId) {
+        ids.add(link.toId);
+      } else if (link.toId === linkSourceNodeId) {
+        ids.add(link.fromId);
+      }
+    });
+
+    return ids;
+  }, [linkSourceNodeId, visibleNoteLinks]);
+
+  const linkSegments = useMemo<CanvasLinkSegment[]>(() => {
+    if (visibleNoteLinks.length === 0) {
+      return [];
+    }
+
+    const nodesById = new Map(noteNodes.map((node) => [node.id, node]));
+
+    return visibleNoteLinks.flatMap((link) => {
+      const fromNode = nodesById.get(link.fromId);
+      const toNode = nodesById.get(link.toId);
+
+      if (!fromNode || !toNode) {
+        return [];
+      }
+
+      const fromX = fromNode.x + fromNode.width / 2;
+      const fromY = fromNode.y + fromNode.height / 2;
+      const toX = toNode.x + toNode.width / 2;
+      const toY = toNode.y + toNode.height / 2;
+
+      const deltaX = toX - fromX;
+      const deltaY = toY - fromY;
+      const length = Math.hypot(deltaX, deltaY);
+
+      if (length < 1) {
+        return [];
+      }
+
+      const midpointX = (fromX + toX) / 2;
+      const midpointY = (fromY + toY) / 2;
+      const angle = `${(Math.atan2(deltaY, deltaX) * 180) / Math.PI}deg`;
+
+      return [{
+        id: link.id,
+        left: midpointX - length / 2,
+        top: midpointY - 1,
+        length,
+        angle,
+      }];
+    });
+  }, [noteNodes, visibleNoteLinks]);
+
   const handleNodeDragStartJS = useCallback((nodeId: string) => {
     const node = noteNodesRef.current.find((n) => n.id === nodeId);
     if (!node) return;
@@ -246,6 +358,12 @@ const SpatialCanvasScreen: React.FC<SpatialCanvasScreenProps> = ({ navigation })
   useEffect(() => {
     contextMenuStateRef.current = contextMenuState;
   }, [contextMenuState]);
+
+  useEffect(() => {
+    if (isLinkPickerVisible && !linkSourceNode) {
+      closeLinkPicker();
+    }
+  }, [closeLinkPicker, isLinkPickerVisible, linkSourceNode]);
 
   const closeContextMenu = useCallback(() => {
     setContextMenuState(null);
@@ -320,8 +438,19 @@ const SpatialCanvasScreen: React.FC<SpatialCanvasScreenProps> = ({ navigation })
           );
           break;
 
+        case 'link':
+          setLinkSourceNodeId(node.id);
+          setLinkPickerVisible(true);
+          break;
+
         case 'remove':
           setNoteNodes((prev) => prev.filter((item) => item.id !== node.id));
+          setNoteLinks((prev) =>
+            prev.filter((link) => link.fromId !== node.id && link.toId !== node.id)
+          );
+          if (linkSourceNodeId === node.id) {
+            closeLinkPicker();
+          }
           const removalTimestamp = new Date();
           setNotes((prev) =>
             prev.map((item) =>
@@ -343,7 +472,7 @@ const SpatialCanvasScreen: React.FC<SpatialCanvasScreenProps> = ({ navigation })
           break;
       }
     },
-    [closeContextMenu, contextMenuState, selectedNode]
+    [closeContextMenu, closeLinkPicker, contextMenuState, linkSourceNodeId, selectedNode]
   );
 
   const computeInsertionPoint = () => {
@@ -396,6 +525,34 @@ const SpatialCanvasScreen: React.FC<SpatialCanvasScreenProps> = ({ navigation })
 
     return { top, left };
   }, [contextMenuState, menuLayout, windowDimensions]);
+
+  const handleLinkTargetPress = useCallback(
+    (targetNodeId: string) => {
+      if (!linkSourceNodeId) {
+        return;
+      }
+
+      const linkId = createLinkId(linkSourceNodeId, targetNodeId);
+      setNoteLinks((prev) => {
+        if (prev.some((link) => link.id === linkId)) {
+          return prev;
+        }
+
+        return [
+          ...prev,
+          {
+            id: linkId,
+            fromId: linkSourceNodeId,
+            toId: targetNodeId,
+          },
+        ];
+      });
+
+      HapticFeedback.trigger('impactLight');
+      closeLinkPicker();
+    },
+    [closeLinkPicker, createLinkId, linkSourceNodeId]
+  );
 
   const handleNodePress = async (nodeId: string) => {
     const node = noteNodes.find(n => n.id === nodeId);
@@ -571,6 +728,24 @@ const SpatialCanvasScreen: React.FC<SpatialCanvasScreenProps> = ({ navigation })
               })}
             </View>
 
+            <View style={styles.connectionsLayer} pointerEvents="none">
+              {linkSegments.map((segment) => (
+                <View
+                  key={segment.id}
+                  style={[
+                    styles.connectionLine,
+                    {
+                      left: segment.left,
+                      top: segment.top,
+                      width: segment.length,
+                      backgroundColor: theme.primary + '80',
+                      transform: [{ rotate: segment.angle }],
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+
             {noteNodes.map((node) => {
               const notePanGesture = Gesture.Pan()
                 .onBegin(() => {
@@ -641,9 +816,6 @@ const SpatialCanvasScreen: React.FC<SpatialCanvasScreenProps> = ({ navigation })
                     <Text style={[styles.noteDate, { color: theme.textSecondary }]}>
                       {formatDate(node.note.lastModified)}
                     </Text>
-
-                    {/* Connection Lines (if any) */}
-                    {/* TODO: Implement based on note links */}
                   </TouchableOpacity>
                 </GestureDetector>
               );
@@ -715,6 +887,75 @@ const SpatialCanvasScreen: React.FC<SpatialCanvasScreenProps> = ({ navigation })
             >
               <Text style={styles.modalCreateButtonText}>Create new note</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={isLinkPickerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeLinkPicker}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalContainer, { backgroundColor: theme.surface }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>
+                {linkSourceNode
+                  ? `Link from ${linkSourceNode.note.title || 'Untitled'}`
+                  : 'Link a note'}
+              </Text>
+              <TouchableOpacity onPress={closeLinkPicker} style={styles.modalCloseButton}>
+                <Text style={[styles.modalCloseText, { color: theme.textSecondary }]}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            {linkTargetNodes.length === 0 ? (
+              <View style={styles.modalEmptyState}>
+                <Text style={[styles.modalEmptyText, { color: theme.textSecondary }]}>
+                  Add at least one more note to create links.
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={linkTargetNodes}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => {
+                  const isAlreadyLinked = linkedTargetIds.has(item.id);
+
+                  return (
+                    <TouchableOpacity
+                      style={[
+                        styles.notePickerItem,
+                        { borderColor: theme.border },
+                        isAlreadyLinked && styles.linkedNotePickerItem,
+                      ]}
+                      disabled={isAlreadyLinked}
+                      onPress={() => handleLinkTargetPress(item.id)}
+                    >
+                      <View style={styles.linkPickerItemHeader}>
+                        <Text style={[styles.notePickerTitle, { color: theme.text }]} numberOfLines={1}>
+                          {item.note.title || 'Untitled'}
+                        </Text>
+                        {isAlreadyLinked && (
+                          <Text style={[styles.linkedNoteBadge, { color: theme.primary }]}>Linked</Text>
+                        )}
+                      </View>
+                      <Text
+                        style={[styles.notePickerPreview, { color: theme.textSecondary }]}
+                        numberOfLines={1}
+                      >
+                        {truncateText(item.note.content || '', 80)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                }}
+                ItemSeparatorComponent={() => (
+                  <View style={[styles.notePickerDivider, { backgroundColor: theme.border + '40' }]} />
+                )}
+                style={styles.notePickerList}
+              />
+            )}
           </View>
         </View>
       </Modal>
@@ -873,6 +1114,14 @@ const styles = StyleSheet.create({
     right: 0,
     height: StyleSheet.hairlineWidth,
   },
+  connectionsLayer: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  connectionLine: {
+    position: 'absolute',
+    height: 2,
+    borderRadius: 2,
+  },
   noteNode: {
     position: 'absolute',
     borderRadius: 12,
@@ -970,6 +1219,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 12,
+  },
+  linkedNotePickerItem: {
+    opacity: 0.45,
+  },
+  linkPickerItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  linkedNoteBadge: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 8,
   },
   notePickerTitle: {
     fontSize: 16,

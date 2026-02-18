@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { createDrawerNavigator } from '@react-navigation/drawer';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import { LocalizationProvider, useLocalization } from './src/contexts/LocalizationContext';
 import { databaseService } from './src/services/DatabaseService';
@@ -16,10 +17,9 @@ import SettingsScreen from './src/screens/SettingsScreen';
 import FavoritesScreen from './src/screens/FavoritesScreen';
 import FolderManagementScreen from './src/screens/FolderManagementScreen';
 import AttachmentsScreen from './src/screens/AttachmentsScreen';
-import CustomDrawerContent from './src/components/CustomDrawerContent';
 
 const Stack = createStackNavigator();
-const Drawer = createDrawerNavigator();
+const Tab = createBottomTabNavigator();
 
 const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -81,6 +81,68 @@ const App: React.FC = () => {
     );
   };
 
+  const MainTabNavigator = () => {
+    const { theme } = useTheme();
+    const { t } = useLocalization();
+
+    return (
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          tabBarActiveTintColor: theme.primary,
+          tabBarInactiveTintColor: theme.textSecondary,
+          tabBarStyle: {
+            backgroundColor: theme.surface,
+            borderTopColor: theme.border,
+          },
+          tabBarIcon: ({ color, size }) => {
+            const iconNameByRoute: Record<string, string> = {
+              MainStack: 'note-multiple-outline',
+              Favorites: 'star-outline',
+              Canvas: 'vector-polyline',
+              FolderManagement: 'folder-outline',
+              Settings: 'cog-outline',
+            };
+
+            return (
+              <Icon
+                name={iconNameByRoute[route.name] || 'circle-outline'}
+                size={size}
+                color={color}
+              />
+            );
+          },
+        })}
+      >
+        <Tab.Screen
+          name="MainStack"
+          component={MainStackNavigator}
+          options={{ tabBarLabel: t('folders.allNotes') }}
+        />
+        <Tab.Screen
+          name="Favorites"
+          component={FavoritesScreen}
+          options={{ tabBarLabel: t('favorites.title') }}
+        />
+        <Tab.Screen
+          name="Canvas"
+          component={SpatialCanvasScreen}
+          options={{ tabBarLabel: 'Canvas' }}
+        />
+        <Tab.Screen
+          name="FolderManagement"
+          component={FolderManagementScreen}
+          options={{ tabBarLabel: t('folders.manage') }}
+        />
+        <Tab.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{ tabBarLabel: t('settings.title') }}
+        />
+      </Tab.Navigator>
+    );
+  };
+
   return (
     <GestureHandlerRootView style={containerStyle}>
       <SafeAreaProvider>
@@ -88,20 +150,7 @@ const App: React.FC = () => {
           <ThemeProvider>
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
             <NavigationContainer>
-              <Drawer.Navigator
-                drawerContent={(props) => <CustomDrawerContent {...props} />}
-                screenOptions={{
-                  headerShown: false,
-                  drawerType: 'slide',
-                  overlayColor: 'rgba(0, 0, 0, 0.5)',
-                }}
-              >
-                <Drawer.Screen name="MainStack" component={MainStackNavigator} />
-                <Drawer.Screen name="Favorites" component={FavoritesScreen} />
-                <Drawer.Screen name="Canvas" component={SpatialCanvasScreen} />
-                <Drawer.Screen name="FolderManagement" component={FolderManagementScreen} />
-                <Drawer.Screen name="Settings" component={SettingsScreen} />
-              </Drawer.Navigator>
+              <MainTabNavigator />
             </NavigationContainer>
           </ThemeProvider>
         </LocalizationProvider>

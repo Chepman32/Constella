@@ -275,14 +275,7 @@ const NotesListScreen: React.FC<NotesListScreenProps> = ({ navigation, route }) 
         >
           <Text style={[styles.actionIcon, { color: theme.primary }]}>✕</Text>
         </TouchableOpacity>
-      ) : selectedFolderId === null ? () => (
-        <TouchableOpacity
-          onPress={() => navigation.openDrawer()}
-          style={styles.actionButton}
-        >
-          <Text style={[styles.actionIcon, { color: theme.primary }]}>☰</Text>
-        </TouchableOpacity>
-      ) : () => (
+      ) : selectedFolderId === null ? undefined : () => (
         <TouchableOpacity
           onPress={() => handleFolderSelect(null)}
           style={styles.backButton}
